@@ -14,6 +14,7 @@
 #define Motor_PRE_0 0x8B
 #define Motor_PRE_1 0x3C
 #define Max_RxMotorMsg 11
+#define MAX_FIFO_SIZE 4096
 
 
 #define rcMemErr              (rcErr | rcMemMgrBase | 0x01)

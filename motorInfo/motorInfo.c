@@ -30,6 +30,8 @@ mySerial serialR("/dev/ttyUSB1",230400);
 
 MSG *MotorRxMsg;
 BYTE MotorRxIdx;
+int FIFOin,FIFOout;
+
 
 INT32 kp;
 INT32 accl;
@@ -179,7 +181,7 @@ UINT32 ConfigCP_17;
 #define PI 3.1415926535897932384626433832795
 unsigned char   rrr[4096];
 MSG msg_data;
-MSG* msg;
+MSG* msg=NULL;
 
 
 pthread_mutex_t myMutex;
@@ -187,60 +189,45 @@ pthread_mutex_t myMutex;
 void Motor_init()
 {
     pthread_mutex_init(&myMutex,0);
+    FIFOin=0,FIFOout=0;
 }
 
 void* threadRcvHandler(void* args)
 {
+    RC rc;
     while(1)
     {
-            
-            msg=(MSG*)rrr;
+           // msg=Comm_BuffAlloc(&rc,TRUE);
+           // rc=Comm_BuffFree(msg,TRUE);
+            //msg=NULL;
             //MotorDrvRx (&msg);
            // RxMsghandler(msg->Data);
-            std::cout<<px_deg<<endl;
+            //std::cout<<px_deg<<endl;
     }
 }
 
 void* threadRcv(void* args)
 {
-
     int bytelen;
+    RC rc=OK;
     while(1)
     {
-            //serial.NumberByteRcv(bytelen);
-        try
-        {   
-            int b2read=11;
-            pthread_mutex_lock(&myMutex);
-            bytelen=serial.Receive( rrr, b2read);
-            pthread_mutex_unlock(&myMutex);
-        }catch(exception e)
-        {
-        #ifdef _LOG_            
-            std::cout << "Receive catch";
-        #endif
-        }            
-
-
-            if (bytelen > 0)
-            {
-                #ifdef _LOG_
-                std::cout<<"bytelen  :"<<bytelen<<endl;
-                
-                for (int i=0;i<100;i++)
-                    std::cout<<std::hex<<(int)rrr[i]<<" ";
-                    std::cout<<std::endl;
-                #endif
-            }
-            //MemClear((BYTE*)rrr,4096);
-
-        usleep(120);
-        #ifdef _LOG_        
-            std::cout<<"R"<<"OK ---- "<<bytelen <<std::endl;
-        #endif
+        pthread_mutex_lock(&myMutex);
+        MotorDrvRx(&msg);
+        if (msg)
+            if (msg->Header.OpCode == 0x11){
+                RxMsghandler(msg->Data);
+                std::cout<<px_deg<<endl;
+                rc=Comm_BuffFree(msg,TRUE);
             
+        }
+        
+        pthread_mutex_unlock(&myMutex);
+        //usleep(120);
     }
 }
+
+
 void* threadSend(void* args)
 {
     BYTE  azimuth_angle=90;
@@ -261,49 +248,19 @@ void* threadSend(void* args)
         //std::cout<<"S"<<check<<endl;
         if( check >= Ts) //after 5 milliseconds have elapsed
         {
-            //cout << kkk << endl;
-            startTime = clock();
-
-            motor_angles.A[0]=(double)azimuth_angle*sin(2*PI*(1/T)*(Ts/1000.0)*n);
-            #ifdef _LOG_
-                std::cout<<"S"<<startTime<<endl;
-            #endif   
-            startTime = clock();
-            #ifdef _LOG_
-                std::cout<<"SS"<<startTime<<endl;
-                std::cout<<"S"<<motor_angles.A[0]<<endl;
-            #endif   
-            try
-            {
-                pthread_mutex_lock(&myMutex);
-                rc=SendMotorData(&motor_angles);
-                pthread_mutex_unlock(&myMutex);
-            }catch(exception e)
-            {
-            #ifdef _LOG_
-                std::cout << "transmit catch";
-            #endif                
-                
-            }
-
-            usleep(1000);
-
             
+            startTime = clock();
+            motor_angles.A[0]=(double)azimuth_angle*sin(2*PI*(1/T)*(Ts/1000.0)*n);
+            startTime = clock();
+            rc=SendMotorData(&motor_angles);
             check = 0;
             kkk++;
             n++;
-
-            #ifdef _LOG_
-            std::cout<<"S?./"<<n<<endl;
-            #endif
-        
             if (n*Ts>=rep*T*1000)
             {
-                #ifdef _LOG_
-                    std::cout<<"----S---"<<n<<endl;
-                #endif
                 n=0;
             }		
+            usleep(3000);
         }
     }
 }
@@ -382,12 +339,11 @@ UINT8* BuildServoDataCmd(UINT8* ptr, UINT16 cmd_id, UINT8 idx, UINT8 data_type, 
 
 RC MotorDrvRx (MSG **msg)
 {
-    RC rc;
+    RC rc=OK;
     BYTE len;
 
-
-   *msg = NULL;
-
+    *msg = NULL;
+    
     if (!MotorRxMsg)
       {
         MotorRxMsg = Comm_BuffAlloc (&rc, TRUE);
@@ -395,18 +351,21 @@ RC MotorDrvRx (MSG **msg)
       }
     if (!MotorRxMsg)
         return(rc);
-    while (MotorRxIdx < 2)
-    {
-        len = 1;
-        //rc=UartDrv_Rx (MOTOR_PORT, &(MotorRxMsg->Data[MotorRxIdx]), &len);
         
-        if (rc)
-            return(rc);
+    if (MotorRxIdx < 2)
+    {
+        
+        len = 1;
+        len = serial.Receive(&(MotorRxMsg->Data[MotorRxIdx]),len);
+        //rc=UartDrv_Rx (MOTOR_PORT, &(MotorRxMsg->Data[MotorRxIdx]), &len);
+
 
         if (MotorRxIdx == 0)
         {
+
             if (MotorRxMsg->Data[0] == Motor_PRE_0)
                 MotorRxIdx++;
+
         }
         else if (MotorRxIdx == 1)
         {
@@ -419,14 +378,17 @@ RC MotorDrvRx (MSG **msg)
         // Get ID
     if (MotorRxIdx > 1)    
 	{
+
 		len = Max_RxMotorMsg - MotorRxIdx;
+        len = serial.Receive(&(MotorRxMsg->Data[MotorRxIdx]),len);
+ 
   			//rc=UartDrv_Rx (MOTOR_PORT, &(MotorRxMsg->Data[MotorRxIdx]), &len);
-  			if (rc)
-     			return(rc);
-  			MotorRxIdx += len;
+
+        MotorRxIdx += len;
 	}
 	if (MotorRxIdx >=  Max_RxMotorMsg)
     {
+       
       MotorRxIdx = 0;
       MotorRxMsg->Header.OpCode = 0x11;
       *msg = MotorRxMsg;

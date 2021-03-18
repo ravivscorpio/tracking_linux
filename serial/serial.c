@@ -91,9 +91,6 @@ int  mySerial::Receive( unsigned char  * data, int len)
        rlen = read(handle,data,len);
       // lenRCV+=rlen;
       
-      #ifdef _LOG_
-          std::cout<<"SERIAL" <<rlen<<std::endl;
-      #endif
 
    return  rlen;
 }

@@ -17,7 +17,7 @@
 /***** Defines  ********************************************************/
 
 
-#define MAX_MSG_BUFFS 9
+#define MAX_MSG_BUFFS 20
 
 
 MSG Msg1;
@@ -29,7 +29,17 @@ MSG Msg6;
 MSG Msg7;
 MSG Msg8;
 MSG Msg9;
-
+MSG Msg10;
+MSG Msg11;
+MSG Msg12;
+MSG Msg13;
+MSG Msg14;
+MSG Msg15;
+MSG Msg16;
+MSG Msg17;
+MSG Msg18;
+MSG Msg19;
+MSG Msg20;
 
 MSG *MsgBank[]=
 {
@@ -41,8 +51,19 @@ MSG *MsgBank[]=
    &Msg6,
    &Msg7,
    &Msg8,
-   &Msg9
-
+   &Msg9,
+   &Msg10,
+   &Msg11,
+   &Msg12,
+   &Msg13,
+   &Msg14,
+   &Msg15,
+   &Msg16,
+   &Msg17,
+   &Msg18,
+   &Msg19,
+   &Msg20
+   
 };
 /***** Private Return Code *********************************************/
 
