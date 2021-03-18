@@ -388,6 +388,6 @@ INT16 calc_servo_crc16(UINT16 crc, UINT8 const *buffer, UINT16 len);
 void SetPx(INT32 new_px);
 double GetPx(void);
 RC SendMotorData(VEC *ant_angles);
-void* threadRcvHandler(void* args);
+
 #endif
 

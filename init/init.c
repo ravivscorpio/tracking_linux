@@ -1,4 +1,5 @@
 #include "motorInfo.h"
+#include "MidjDrv.h"
 #include <ctime>
 #include <iostream>
 #include <unistd.h>
@@ -8,6 +9,7 @@
 #include <math.h>
 #include <pthread.h>
 #include <sched.h>
+
 
 
 //#define _LOG_
@@ -37,6 +39,7 @@ int main()
     //cin >> azimuth_angle;
     Motor_init();
     Comm_Init();
+    MidjDrv_Init();
     int n=0;
     int max_prio = sched_get_priority_max(SCHED_RR);
 
@@ -55,18 +58,16 @@ int main()
     rcc = pthread_attr_init (&attr3);
     rcc = pthread_attr_setschedpolicy(&attr3,SCHED_RR);
     rcc = pthread_attr_getschedparam (&attr3, &param3);
-    //(param2.sched_priority)=max_prio;
+    (param3.sched_priority)=max_prio;
     rcc = pthread_attr_setschedparam (&attr3, &param3);
 
     ret1=pthread_create(&id1,&attr1,&threadRcv, NULL);
     ret2=pthread_create(&id2,&attr2,&threadSend, NULL);
-    ret3=pthread_create(&id3,&attr3,&threadRcvHandler, NULL);
+    ret3=pthread_create(&id3,&attr3,&threadMIDGHandler, NULL);
 
     while (true)
     {
-    #ifdef _LOG_
-        std::cout<<"main loop" <<std::endl;
-    #endif
+
         sleep(1);
     }
 

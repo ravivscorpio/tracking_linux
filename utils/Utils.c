@@ -388,56 +388,21 @@ RC MemCopy(void *dst, const void *src, UINT16 size)
       return(OK);
 
    if (dst < src)
-      {
+   {
       for (i = 0; i < size; )
-         {
+      {
          // if not aligned to 2 bytes - copy one byte
-         if ((((UINT16)Src) & 0x0001) || (((UINT16)Dst) & 0x0001) || ((size - i) < 2))
-            {
-            Dst[0] = Src[0];
-
-            Src++;
-            Dst++;
-            i++;
-            }
-         else // if aligned to 4 bytes
-            {
-            ((UINT16 *)Dst)[0] = ((UINT16 *)Src)[0];
-
-            Src += 2;
-            Dst += 2;
-            i += 2;
-            }
-         }
-      }
-   else // (src > dst)
-      {
-      Src += size;
-      Dst += size;
-
-      for (i = 0; i < size; )
+         //if ((((UINT16)Src) & 0x0001) || (((UINT16)Dst) & 0x0001) || ((size - i) < 2))
          {
-         // if  not aligned to 4 bytes - copy one byte
-         if ((((UINT16)Src) & 0x0001) || (((UINT16)Dst) & 0x0001) || ((size - i) < 2))
-            {
-            Src--;
-            Dst--;
-            i++;
+         Dst[0] = Src[0];
 
-            Dst[0] = Src[0];
-            }
-         else // if aligned to 4 bytes - copy 4 bytes
-            {
-            Src -= 2;
-            Dst -= 2;
-            i += 2;
-
-            ((UINT16 *)Dst)[0] = ((UINT16 *)Src)[0];
-            }
+         Src++;
+         Dst++;
+         i++;
          }
+
       }
-
-
+   }
    return(OK);
 }
 

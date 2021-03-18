@@ -26,7 +26,7 @@ using namespace std;
 
 
 mySerial serial("/dev/ttyUSB0",230400);
-mySerial serialR("/dev/ttyUSB1",230400);
+
 
 MSG *MotorRxMsg;
 BYTE MotorRxIdx;
