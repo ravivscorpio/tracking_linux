@@ -10,6 +10,8 @@
 /***** Include files ***************************************************/
 
 #include "MidjDrv_p.h"
+#include "matrix.h"
+#include "aim.h"
 #include <iostream>
 #include <pthread.h>
 #include <unistd.h>
@@ -19,6 +21,9 @@ MSG *MidjRxMsg=NULL;
 BYTE MidjRxIdx=0;
 pthread_mutex_t MIDGMutex;
 mySerial serialMIDG("/dev/ttyUSB1",115200);
+
+extern MAT DCM,DCM_fix;
+extern VEC Vned,Vant,ant_angles;
 /************************************************************************
 * Name       : RC MidjDrv_Init (void)
 * Description:
@@ -74,10 +79,10 @@ RC Algo_SendInsData(MIDJ_InsMsg *InsInfo)
 {
    
    RC rc;
-   std::cout<<(float)InsInfo->Pitch/100.0<<std::endl;
+   //std::cout<<(float)InsInfo->Pitch/100.0<<std::endl;
    //ant_angles=sat_aim(-4, 32.0,35.0, InsInfo->Roll/100.0,InsInfo->Pitch/100.0, InsInfo->Yaw/100.0, 0, 0, 0);
-  // rc=update_dcm(&DCM,InsInfo->Roll/100.0, InsInfo->Pitch/100.0,InsInfo->Yaw/100.0);
-  // rc=update_angles(&DCM_fix,&DCM,&ant_angles,&Vned,&Vant);
+   rc=update_dcm(&DCM,InsInfo->Roll/100.0, InsInfo->Pitch/100.0,InsInfo->Yaw/100.0);
+   rc=update_angles(&DCM_fix,&DCM,&ant_angles,&Vned,&Vant);
    //Vant.A[0]=ant_angles.A[0];
    //rc=Algo_SendMotorData(&ant_angles);
    return OK;

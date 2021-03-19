@@ -11,7 +11,7 @@
 
 #include "motorInfo.h"
 #include "Utils.h"
-//#include "uartdrv.h"
+#include "aim.h"
 #include "Comm.h"
 #include <math.h>
 #include <iostream>
@@ -183,13 +183,18 @@ unsigned char   rrr[4096];
 MSG msg_data;
 MSG* msg=NULL;
 
+MAT DCM,DCM_fix;
+VEC Vned,Vant,ant_angles;
 
 pthread_mutex_t myMutex;
 
 void Motor_init()
 {
+    RC rc;
     pthread_mutex_init(&myMutex,0);
     FIFOin=0,FIFOout=0;
+    
+    rc=aim_init(&DCM_fix,&DCM,&ant_angles,&Vned,&Vant);
 }
 
 void* threadRcvHandler(void* args)
@@ -252,7 +257,8 @@ void* threadSend(void* args)
             startTime = clock();
             motor_angles.A[0]=(double)azimuth_angle*sin(2*PI*(1/T)*(Ts/1000.0)*n);
             startTime = clock();
-            rc=SendMotorData(&motor_angles);
+            rc=SendMotorData(&ant_angles);
+            //rc=SendMotorData(&motor_angles);
             check = 0;
             kkk++;
             n++;

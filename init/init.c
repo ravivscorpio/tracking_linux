@@ -1,5 +1,6 @@
 #include "motorInfo.h"
 #include "MidjDrv.h"
+#include "aim.h"
 #include <ctime>
 #include <iostream>
 #include <unistd.h>
@@ -40,6 +41,7 @@ int main()
     Motor_init();
     Comm_Init();
     MidjDrv_Init();
+    
     int n=0;
     int max_prio = sched_get_priority_max(SCHED_RR);
 

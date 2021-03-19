@@ -56,7 +56,7 @@
 #include <iostream>
 
 #define SGP4Version  "SGP4 Version 2020-07-13"
-
+#define pi 3.14159265358979323846
 // -------------------------- structure declarations ----------------------------
 typedef enum
 {
