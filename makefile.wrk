@@ -1,0 +1,57 @@
+IDIR =./include
+CC=g++
+CFLAGS=-I$(IDIR)
+ODIR=./output
+LDIR =./lib
+LIBS=-lm
+
+_DEPS =  defs_p.h\
+         motorInfo.h\
+         rc.h\
+         Comm.h\
+         defs.h\
+         protocol.h\
+         rc_p.h\
+         Utils.h\
+         matrix.h\
+         init.h\
+         serial.h\
+	 Comm_p.h\
+         Utils_p.h
+
+_DEPS_P =./Comm/Comm_p.h\
+         ./utils/Utils_p.h
+
+DEPS_G = $(addprefix $(IDIR)/,$(_DEPS))
+
+DEPS =   $(_DEPS_P) $(DEPS_G)
+
+SOURCES =	./motorInfo/motorInfo.c\
+	        ./Comm/Comm.c\
+        	./utils/Utils.c\
+	        ./matrix/matrix.c\
+	        ./serial/serial.c\
+	        ./init/init.c
+
+_OBJ=$(SOURCES:%.c=%.o)
+#OBJ=$(addprefix $(ODIR)/,$(notdir $(_OBJ)))
+OBJ = $(addprefix $(ODIR)/,$(notdir $(SOURCES:%.c=%.o)))
+.PHONY:bbb
+bbb:
+	@echo $(DEPS)
+
+
+#$(_OBJ) : %.o: $(SOURCES) $(DEPS)
+$(ODIR)/%.o: $(SOURCES:%.c) $(_DEPS)
+#$(OBJ) : $(SOURCES) $(DEPS)
+#$(OBJ) : #$(ODIR)/%.o : %.c
+#	$(CC)  -c -o $@  $< $(CFLAGS)
+	$(CC) $(CFLAGS)  -c -o $@  $< 
+#motor: $(SOURCES)
+motor: $(_OBJ)
+#motor:  $(addprefix $(ODIR)/,$(notdir $(_OBJ)))
+#motor:  $(OBJ)
+	@echo $(DEPS)
+	$(CC)   -o $@	  $^ $(CFLAGS) $(LIBS) 
+
+
