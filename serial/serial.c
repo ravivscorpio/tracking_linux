@@ -3,10 +3,11 @@ extern "C" {
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
-}
-#include <iostream>
-using namespace std;
 
+}
+
+using namespace std;
+#include <iostream>
 #include "serial.h"
 
 mySerial::mySerial(string deviceName, int baud)
@@ -39,11 +40,15 @@ bool mySerial::Open(string deviceName , int baud)
 
     if(handle <0)
        return false;
-    tio.c_cflag =  CS8 | CLOCAL | CREAD;
+    tio.c_cflag = 0;
+    tio.c_cflag =  CS8 | CLOCAL | CREAD; //& ~PARENB & ~CSTOPB & ~CRTSCTS & ~ISIG & ~CSIZE;
     tio.c_oflag = 0;
     tio.c_lflag = 0;       //ICANON;
+
+    tio.c_iflag = 0;
+    tio.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
     tio.c_cc[VMIN]=0;
-    tio.c_cc[VTIME]=1;     // time out every .1 sec
+    tio.c_cc[VTIME]=0;     // time out every .1 sec
     ioctl(handle,TCSETS,&tio);
 
     ioctl(handle,TCGETS2,&tio2);
@@ -71,33 +76,26 @@ bool mySerial::Send( unsigned char  * data,int len)
    return(rlen == len);
 }
 
-bool mySerial::Send( unsigned char value)
-{
-   if(!IsOpen()) return false;
-   int rlen= write(handle,&value,1);
-   return(rlen == 1);
-}
 
-bool mySerial::Send(std::string value)
-{
-   if(!IsOpen()) return false;
-   int rlen= write(handle,value.c_str(),value.size()); 
-   return(rlen == value.size());
-}
 
 
 int  mySerial::Receive( unsigned char  * data, int len)
 {
+   int rlen;
    if(!IsOpen()) return -1;
 
    // this is a blocking receives
-   int lenRCV=0;
-   while(lenRCV < len)
-     {
-       int rlen = read(handle,&data[lenRCV],len - lenRCV);
-       lenRCV+=rlen;
-     }
-   return  lenRCV;
+   //int lenRCV=0;
+
+
+       rlen = read(handle,data,len);
+      // lenRCV+=rlen;
+      
+      #ifdef _LOG_
+          std::cout<<"SERIAL" <<rlen<<std::endl;
+      #endif
+
+   return  rlen;
 }
 
 bool mySerial::NumberByteRcv(int &bytelen)

@@ -21,7 +21,7 @@
 
 
 
-#define TICS_PER_DEGREE 136 // 49,152/360
+#define TICS_PER_DEGREE 22//467//136 // 49,152/360
 
 #define MOTOR_ERROR_HISTORY_SIZE	10	// 50 ms
 
@@ -115,19 +115,22 @@ typedef struct
 typedef enum cmd_id {
    SERVO_ACCL_CMD =                200,
    SERVO_DECCL_CMD =               201,
-   SERVO_PA_CMD =                  205,
+   //SERVO_PA_CMD =                  205,
+   SERVO_PA_CMD =                  5,
    SERVO_STOP_DECCL_CMD =          207,
    SERVO_SPP_CMD =                 208,
    SERVO_3PNT_MOVE_CMD =           210,
    SERVO_BG_CMD =                  238,
-   SERVO_MO_CMD =                  284,
+   //SERVO_MO_CMD =                  284,
+   SERVO_MO_CMD =                  1,
    SERVO_UM_CMD =                  289,
    SERVO_MF_CMD =                  2216,
    SERVO_INFO_CMD =                2219,
    SERVO_STATUS_CMD =              2223,
    SERVO_TI_CMD =                  2225,
    SERVO_VER_CMD =                 2230,
-   SERVO_PX_CMD =                  3200,
+   //SERVO_PX_CMD =                  3200,
+   SERVO_PX_CMD =                  26,
    SERVO_AA_CMD =                  3208,
    SERVO_PM_CMD =                  4203,
    SERVO_HRL_CMD =                 4206, // High Refference Limit
@@ -371,6 +374,9 @@ typedef enum servo_cmd_error{
     SERVO_ERROR = 1
 } servo_cmd_error_t;
 
+void Motor_init();
+void* threadRcv(void* args);
+void* threadSend(void* args);
 RC MotorDrvRx (MSG **msg);
 void RxMsghandler(void *cmd_p);
 UINT8* BuildServoCmd(UINT8* ptr, UINT16 cmd_id, UINT8 idx, UINT8 type, UINT8 data_type);
@@ -381,5 +387,6 @@ INT16 calc_servo_crc16(UINT16 crc, UINT8 const *buffer, UINT16 len);
 void SetPx(INT32 new_px);
 double GetPx(void);
 RC SendMotorData(VEC *ant_angles);
+void* threadRcvHandler(void* args);
 #endif
 

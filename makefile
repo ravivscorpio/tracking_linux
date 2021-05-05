@@ -36,16 +36,17 @@ SOURCES =	./motorInfo/motorInfo.c\
 _OBJ=$(SOURCES:%.c=%.o)
 OBJ = $(addprefix $(ODIR)/,$(notdir $(SOURCES:%.c=%.o)))
 
+motor:  $(_OBJ)
+	@echo Linking..........................................
+	$(CC) -g  -o  $@	$(addprefix $(ODIR)/,$(^F)) $(CFLAGS) $(LIBS) -lpthread
 
 
 $(_OBJ) : %.o : %.c
 	@echo Compiling.......................................
-	$(CC) $(CFLAGS)  -c -o $(ODIR)/$(@F)	$< 
+	$(CC) -g $(CFLAGS)  -c -o $(ODIR)/$(@F)	$< -lpthread
 
 
-motor:  $(_OBJ)
-	@echo Linking..........................................
-	$(CC)   -o  $@	$(addprefix $(ODIR)/,$(^F)) $(CFLAGS) $(LIBS) 
+
 
 .PHONY:clean
 clean:

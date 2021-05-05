@@ -354,45 +354,17 @@ RC CalcAsciiOrBitsCheckSum(void *pData, INT16 DataLen, UINT16 *pCheckSum)
 * Effected   :
 * Note(s)    :
 *************************************************************************/
-RC MemClear(void *MemPtr, UINT16 size)
+RC MemClear(BYTE *MemPtr, UINT16 size)
 {
    BYTE *bP;
    UINT16 *iP;
    UINT16 i = 0;
    UINT16 no = 0, sum = 0;
-
-   
-   if (!MemPtr)
-      return(rcUtilsWrongPtr);
-
-   // if small amount of bus access are needed
-   if (size == 1)
-      {
-      *(BYTE *)MemPtr = 0;
-      return(OK);
-      }
-
-   // if address not aligned
-   else if ((UINT16)MemPtr & 0x1)
-      {
-      *(BYTE *)MemPtr = 0;
-      MemPtr++;
-      sum++;
-      }
-
-   // clear ...
-   no = (size - no) / sizeof (UINT16);
-   iP = (UINT16 *)MemPtr;
+   no=size;
+   bP=MemPtr;
    for (i = 0; i < no; i++)
-      iP[i] = 0;
-   MemPtr = &(iP[i]);
-   sum += i * sizeof(UINT16);
-
-   // if size is not in the size of bus access
-   bP = (BYTE *)MemPtr;
-   if ((i + sum) < size)
       bP[i] = 0;
-
+  
    return(OK);
 }
 

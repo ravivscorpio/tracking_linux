@@ -24,6 +24,7 @@ public:
   void Close(void);
   bool Open(std::string deviceName, int baud);
   bool NumberByteRcv(int &bytelen);
+  bool flush(void);
 };
 
 #endif

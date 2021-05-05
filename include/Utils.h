@@ -50,7 +50,7 @@ RC CalcSwappedCheckSum(MSG *pData, UINT16 *pCheckSum);
 RC CalcFletcherCheckSum(void *pData, INT16 DataLen, UINT16 *pCheckSum);
 RC CalcAsciiOrBitsCheckSum(void *pData, INT16 DataLen, UINT16 *pCheckSum);
 RC SwapMsg (MSG *pOrigin, MSG *pSwaped);
-RC MemClear(void *MemPtr, UINT16 size);
+RC MemClear(BYTE *MemPtr, UINT16 size);
 RC MemCopy(void *dst, const void *src, UINT16 size);
 
 UINT32 LittleXBig32(UINT32 val);

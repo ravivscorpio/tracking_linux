@@ -10,161 +10,303 @@
 /***** Include files ***************************************************/
 
 #include "motorInfo.h"
+#include "Utils.h"
 //#include "uartdrv.h"
 #include "Comm.h"
 #include <math.h>
-mySerial serial("/dev/ttyAMA0",115200);
+#include <iostream>
+#include <pthread.h>
+#include <unistd.h>
+#include <ctime>
 
-    MSG *MotorRxMsg;
-    BYTE MotorRxIdx;
-
-	INT32 kp;
-	INT32 accl;
-	INT32 deccl;
-	INT32 pm;
-	INT32 spp;
-
-	INT32 mo;
-	INT32 mf;
-	ACU_homing_stat_t homing_status;
-	ACU_deicing_stat_t deicing_status;
-	// current Status
-	MotorStatus_t status;
-	MotorFailStatus_t MotorFailStatusWord;
-
-	// Motor Temperature
-	INT32 MotorTemp;
-
-	char* Ver[MAX_VER_LEN];
-	BOOL VerUpdated;
-
-	char* VerCheckSum[MAX_VER_LEN];
-	BOOL VerCheckSumUpdated;
-
-	char* BootVer[MAX_VER_LEN];
-	BOOL BootVerUpdated;
-
-	char* BootVerCheckSum[MAX_VER_LEN];
-	BOOL BootVerCheckSumUpdated;
-	
-	char* DriverSN[MAX_VER_LEN];
-	BOOL DriverSNUpdated;
-
-	char* DriverRev[MAX_VER_LEN];
-	BOOL DriverRevUpdated;
-
-	char* EncoderSN[MAX_VER_LEN];
-	BOOL EncoderSNUpdated;
-
-	char* SystemSN[MAX_VER_LEN];
-	BOOL SystemSNUpdated;
-
-	UINT32 ZeroCal;
-	UINT32 ZeroCalRead;
-
-	INT32 px;
-
-	// the estimated location the axis should be in 5ms
-	double est_deg;
-
-	// the location that the axis should be now, estimated 5 ms ago
-	double pred_est_deg;
-
-	// the location the axis should be now
-	double curr_deg;
-
-	BOOL CommVerified;
-
-	BOOL ConfigCheckStat;
+using namespace std;
 
 
+//#define _LOG_
+
+
+mySerial serial("/dev/ttyUSB0",230400);
+mySerial serialR("/dev/ttyUSB1",230400);
+
+MSG *MotorRxMsg;
+BYTE MotorRxIdx;
+
+INT32 kp;
+INT32 accl;
+INT32 deccl;
+INT32 pm;
+INT32 spp;
+
+INT32 mo;
+INT32 mf;
+ACU_homing_stat_t homing_status;
+ACU_deicing_stat_t deicing_status;
+// current Status
+MotorStatus_t status;
+MotorFailStatus_t MotorFailStatusWord;
+
+// Motor Temperature
+INT32 MotorTemp;
+
+char* Ver[MAX_VER_LEN];
+BOOL VerUpdated;
+
+char* VerCheckSum[MAX_VER_LEN];
+BOOL VerCheckSumUpdated;
+
+char* BootVer[MAX_VER_LEN];
+BOOL BootVerUpdated;
+
+char* BootVerCheckSum[MAX_VER_LEN];
+BOOL BootVerCheckSumUpdated;
+
+char* DriverSN[MAX_VER_LEN];
+BOOL DriverSNUpdated;
+
+char* DriverRev[MAX_VER_LEN];
+BOOL DriverRevUpdated;
+
+char* EncoderSN[MAX_VER_LEN];
+BOOL EncoderSNUpdated;
+
+char* SystemSN[MAX_VER_LEN];
+BOOL SystemSNUpdated;
+
+UINT32 ZeroCal;
+UINT32 ZeroCalRead;
+
+INT32 px;
+
+// the estimated location the axis should be in 5ms
+double est_deg;
+
+// the location that the axis should be now, estimated 5 ms ago
+double pred_est_deg;
+
+// the location the axis should be now
+double curr_deg;
+
+BOOL CommVerified;
+
+BOOL ConfigCheckStat;
 
 
 
-	double px_deg;
-
-	// target position and position offset
-	double px_deg_err; 
-
-	// estimated target position and current position offset
-	double px_est_deg_err; 
 
 
-	// Calibratoin Data
-	// command data
-	UINT8 TargetAddr;
-	UINT16 Msg_op;
-		
-	// NIP data
-	double allowed_err;
-	BOOL isNIP;
+double px_deg;
 
-	double MotorErrHist[MOTOR_ERROR_HISTORY_SIZE];
-	int MotorErrIdx;
-	double MotorErrAccumulator;
+// target position and position offset
+double px_deg_err; 
 
-	// MF status
-	BOOL MotorFail;
-	BOOL ReadMotorFail;
-
-	// prebuilt, frequently used,  commands
-
-	UINT8 MotorBeginMotionCmd[MOTOR_CMD_DATA_LENGTH];
-	UINT8 MotorMotorOnCmd[MOTOR_CMD_DATA_LENGTH];
-	UINT8 MotorGetPxCmd[MOTOR_CMD_LENGTH];
-	UINT8 MotorGetStatusCmd[MOTOR_CMD_LENGTH];
-	UINT8 MotorGetTempCmd[MOTOR_CMD_LENGTH];
+// estimated target position and current position offset
+double px_est_deg_err; 
 
 
-	char *m_name;
+// Calibratoin Data
+// command data
+UINT8 TargetAddr;
+UINT16 Msg_op;
+    
+// NIP data
+double allowed_err;
+BOOL isNIP;
 
-	// TBD : parameters
-	void *SERVOCmd_ptr; // point to the custom command data structure. Will set there the values that were recieved fromt the SERVO
+double MotorErrHist[MOTOR_ERROR_HISTORY_SIZE];
+int MotorErrIdx;
+double MotorErrAccumulator;
 
-	// These values are the values of the expected configuraiton
-	UINT32 ConfigAccl;
-	UINT32 ConfigDecl;
-	UINT32 ConfigStopDecl;
-	UINT32 ConfigSPP;
-	UINT32 ConfigUm;
-	UINT32 ConfigVer;
-	UINT32 ConfigPM;
+// MF status
+BOOL MotorFail;
+BOOL ReadMotorFail;
+
+// prebuilt, frequently used,  commands
+
+UINT8 MotorBeginMotionCmd[MOTOR_CMD_DATA_LENGTH];
+UINT8 MotorMotorOnCmd[MOTOR_CMD_DATA_LENGTH];
+UINT8 MotorGetPxCmd[MOTOR_CMD_LENGTH];
+UINT8 MotorGetStatusCmd[MOTOR_CMD_LENGTH];
+UINT8 MotorGetTempCmd[MOTOR_CMD_LENGTH];
+
+
+char *m_name;
+
+// TBD : parameters
+void *SERVOCmd_ptr; // point to the custom command data structure. Will set there the values that were recieved fromt the SERVO
+
+// These values are the values of the expected configuraiton
+UINT32 ConfigAccl;
+UINT32 ConfigDecl;
+UINT32 ConfigStopDecl;
+UINT32 ConfigSPP;
+UINT32 ConfigUm;
+UINT32 ConfigVer;
+UINT32 ConfigPM;
 
 //	UINT32 ConfigHRL1;
 //	UINT32 ConfigHRL2;
 //	UINT32 ConfigLRL1;
 //	UINT32 ConfigLRL2;
-	UINT32 ConfigXmodLow;
-	UINT32 ConfigXmodHigh;
-	UINT32 ConfigYmodLow;
-	UINT32 ConfigYmodHigh;
+UINT32 ConfigXmodLow;
+UINT32 ConfigXmodHigh;
+UINT32 ConfigYmodLow;
+UINT32 ConfigYmodHigh;
 
-	FLOAT32 ConfigTL1;
-	FLOAT32 ConfigTL2;
-	FLOAT32 ConfigTL3;
-	FLOAT32 ConfigPeakDurMin;
-	FLOAT32 ConfigPeakDurMax;
-	FLOAT32 ConfigPeakLimMin;
-	FLOAT32 ConfigPeakLimMax;
-	UINT32 ConfigRefMode;
+FLOAT32 ConfigTL1;
+FLOAT32 ConfigTL2;
+FLOAT32 ConfigTL3;
+FLOAT32 ConfigPeakDurMin;
+FLOAT32 ConfigPeakDurMax;
+FLOAT32 ConfigPeakLimMin;
+FLOAT32 ConfigPeakLimMax;
+UINT32 ConfigRefMode;
 //	UINT32 ConfigEchoMode;
 
 //	UINT32 ConfigUI_1;
-	UINT32 ConfigUI_6;
-	UINT32 ConfigUI_7;
-	UINT32 ConfigUI_8;
-	UINT32 ConfigUI_9;
-	UINT32 ConfigUI_10;
-	UINT32 ConfigUI_15;
-	UINT32 ConfigUI_16;
-	UINT32 ConfigUI_17;
-	UINT32 ConfigUI_CalVer;
+UINT32 ConfigUI_6;
+UINT32 ConfigUI_7;
+UINT32 ConfigUI_8;
+UINT32 ConfigUI_9;
+UINT32 ConfigUI_10;
+UINT32 ConfigUI_15;
+UINT32 ConfigUI_16;
+UINT32 ConfigUI_17;
+UINT32 ConfigUI_CalVer;
 
-	UINT32 ConfigCP_17;
+UINT32 ConfigCP_17;
+    VEC motor_angles;
+
+#define PI 3.1415926535897932384626433832795
+unsigned char   rrr[4096];
+MSG msg_data;
+MSG* msg;
 
 
+pthread_mutex_t myMutex;
+
+void Motor_init()
+{
+    pthread_mutex_init(&myMutex,0);
+}
+
+void* threadRcvHandler(void* args)
+{
+    while(1)
+    {
+            
+            msg=(MSG*)rrr;
+            //MotorDrvRx (&msg);
+           // RxMsghandler(msg->Data);
+            std::cout<<px_deg<<endl;
+    }
+}
+
+void* threadRcv(void* args)
+{
+
+    int bytelen;
+    while(1)
+    {
+            //serial.NumberByteRcv(bytelen);
+        try
+        {   
+            int b2read=11;
+            pthread_mutex_lock(&myMutex);
+            bytelen=serial.Receive( rrr, b2read);
+            pthread_mutex_unlock(&myMutex);
+        }catch(exception e)
+        {
+        #ifdef _LOG_            
+            std::cout << "Receive catch";
+        #endif
+        }            
 
 
+            if (bytelen > 0)
+            {
+                #ifdef _LOG_
+                std::cout<<"bytelen  :"<<bytelen<<endl;
+                
+                for (int i=0;i<100;i++)
+                    std::cout<<std::hex<<(int)rrr[i]<<" ";
+                    std::cout<<std::endl;
+                #endif
+            }
+            //MemClear((BYTE*)rrr,4096);
+
+        usleep(120);
+        #ifdef _LOG_        
+            std::cout<<"R"<<"OK ---- "<<bytelen <<std::endl;
+        #endif
+            
+    }
+}
+void* threadSend(void* args)
+{
+    BYTE  azimuth_angle=90;
+    time_t startTime = clock();
+    time_t check = 0;
+    unsigned int kkk,n;
+    RC rc;
+    float T=9;//sec
+    float Ts=5;//msec
+    float rep=1;
+    float Total_time;
+    
+
+    while(1) //program main loop
+    {
+	
+        check = float(clock() - startTime)/CLOCKS_PER_SEC*1000;
+        //std::cout<<"S"<<check<<endl;
+        if( check >= Ts) //after 5 milliseconds have elapsed
+        {
+            //cout << kkk << endl;
+            startTime = clock();
+
+            motor_angles.A[0]=(double)azimuth_angle*sin(2*PI*(1/T)*(Ts/1000.0)*n);
+            #ifdef _LOG_
+                std::cout<<"S"<<startTime<<endl;
+            #endif   
+            startTime = clock();
+            #ifdef _LOG_
+                std::cout<<"SS"<<startTime<<endl;
+                std::cout<<"S"<<motor_angles.A[0]<<endl;
+            #endif   
+            try
+            {
+                pthread_mutex_lock(&myMutex);
+                rc=SendMotorData(&motor_angles);
+                pthread_mutex_unlock(&myMutex);
+            }catch(exception e)
+            {
+            #ifdef _LOG_
+                std::cout << "transmit catch";
+            #endif                
+                
+            }
+
+            usleep(1000);
+
+            
+            check = 0;
+            kkk++;
+            n++;
+
+            #ifdef _LOG_
+            std::cout<<"S?./"<<n<<endl;
+            #endif
+        
+            if (n*Ts>=rep*T*1000)
+            {
+                #ifdef _LOG_
+                    std::cout<<"----S---"<<n<<endl;
+                #endif
+                n=0;
+            }		
+        }
+    }
+}
 
 
 
@@ -248,7 +390,7 @@ RC MotorDrvRx (MSG **msg)
 
     if (!MotorRxMsg)
       {
-        MotorRxMsg = Comm_BuffAlloc (&rc, FALSE);
+        MotorRxMsg = Comm_BuffAlloc (&rc, TRUE);
         MotorRxIdx = 0;
       }
     if (!MotorRxMsg)
@@ -301,7 +443,7 @@ RC MotorDrvRx (MSG **msg)
 RC SendMotorData(VEC *ant_angles)
 {
    RC rc;
-
+int bytelen=0;
 
    FLOAT32 YYY;
 
@@ -325,10 +467,10 @@ RC SendMotorData(VEC *ant_angles)
 	      INT32 delta10, delta15;	
 	
          BuildServoDataCmd(MotorMotorOnCmd, SERVO_MO_CMD, 0, SERVO_INT, &data_val, SERVO_TO_DRIVER, SERVO_SET); 
-         BuildServoDataCmd(MotorBeginMotionCmd, SERVO_BG_CMD, 0, SERVO_INT, &data_val, SERVO_TO_DRIVER, SERVO_SET);
+        // BuildServoDataCmd(MotorBeginMotionCmd, SERVO_BG_CMD, 0, SERVO_INT, &data_val, SERVO_TO_DRIVER, SERVO_SET);
          BuildServoCmd(MotorGetPxCmd, SERVO_PX_CMD, 0, SERVO_GET,0);
-         BuildServoCmd(MotorGetStatusCmd, SERVO_STATUS_CMD, 0, SERVO_GET,0);
-         BuildServoCmd(MotorGetTempCmd, SERVO_TI_CMD, 1, SERVO_GET, SERVO_FLT);
+        // BuildServoCmd(MotorGetStatusCmd, SERVO_STATUS_CMD, 0, SERVO_GET,0);
+        // BuildServoCmd(MotorGetTempCmd, SERVO_TI_CMD, 1, SERVO_GET, SERVO_FLT);
 			//YYY=InsInfo->Yaw;
 			YYY=ant_angles->A[0];
 			if (YYY<0)
@@ -357,16 +499,16 @@ RC SendMotorData(VEC *ant_angles)
 			//data_val = (data5 & 0x0003FFFF )<<(2*SERVO_3PNT_DELTA_BITS) | ( delta10 & 0x0000007F)<<SERVO_3PNT_DELTA_BITS | (delta15 & 0x0000007F) ;
 			
 			BuildServoDataCmd(MotorPA, SERVO_PA_CMD, 0, SERVO_INT, &data_val, SERVO_TO_DRIVER, SERVO_SET);
-			BuildServoDataCmd(MotorTrack, SERVO_3PNT_MOVE_CMD, 0, SERVO_INT, &data_val, SERVO_TO_DRIVER, SERVO_SET);
+			//BuildServoDataCmd(MotorTrack, SERVO_3PNT_MOVE_CMD, 0, SERVO_INT, &data_val, SERVO_TO_DRIVER, SERVO_SET);
 
 
-			UINT8 az[100];
+			//UINT8 az[100];
 			
-			UINT8* write_ptr = az;
+			//UINT8* write_ptr = az;
 			
-		    memClear(write_ptr,100);
+		    //memClear(write_ptr,100);
 			
-			memCopy(write_ptr, MotorMotorOnCmd, MOTOR_CMD_DATA_LENGTH);
+			/*memCopy(write_ptr, MotorMotorOnCmd, MOTOR_CMD_DATA_LENGTH);
 			write_ptr += MOTOR_CMD_DATA_LENGTH;
 			memCopy(write_ptr, MotorPA, MOTOR_CMD_DATA_LENGTH);
 			//memCopy(write_ptr, MotorTrack, MOTOR_CMD_DATA_LENGTH);
@@ -376,10 +518,13 @@ RC SendMotorData(VEC *ant_angles)
 			//rc=UartDrv_Tx (MOTOR_PORT, az, MOTOR_CMD_DATA_LENGTH);
             serial.Send(az,MOTOR_CMD_DATA_LENGTH);
  			memCopy(write_ptr, MotorGetPxCmd, MOTOR_CMD_DATA_LENGTH);
-			write_ptr += MOTOR_CMD_DATA_LENGTH;
-			//rc=UartDrv_Tx (MOTOR_PORT, az, MOTOR_CMD_DATA_LENGTH*4);     
-            serial.Send(az,MOTOR_CMD_DATA_LENGTH*4);
-			
+			write_ptr += MOTOR_CMD_DATA_LENGTH;*/
+			//rc=UartDrv_Tx (MOTOR_PORT, az, MOTOR_CMD_DATA_LENGTH*4); 
+            serial.Send(MotorMotorOnCmd,MOTOR_CMD_DATA_LENGTH);    
+            serial.Send(MotorPA,MOTOR_CMD_DATA_LENGTH);
+            serial.Send(MotorGetPxCmd,MOTOR_CMD_LENGTH);
+            
+
 	
 
 	return(rc);
