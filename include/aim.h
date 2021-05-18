@@ -13,6 +13,8 @@
 #include "matrix.h"
 #include "rc.h"
 #include "defs_p.h"
+#include "SGP4.h"
+#include <math.h>
 
 
 /***** Defines  ********************************************************/
@@ -38,7 +40,7 @@ RC predict_angles(MAT *dcm,VEC *ant_angles,VEC *Vned,VEC *Vant,VEC* rates);
 RC lla_to_ecef(VEC* xyz, VEC* lla);
 RC ecef_to_lla(VEC* xyz, VEC *lla);
 RC lla_to_ned(VEC* Vned ,VEC* sat_xyz, VEC* station_lla);
-
+void Get_SatLatLong(VEC* lla_sgp,char* satname);
 
 
 

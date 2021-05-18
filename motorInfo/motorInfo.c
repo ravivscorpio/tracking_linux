@@ -185,16 +185,74 @@ MSG* msg=NULL;
 
 MAT DCM,DCM_fix;
 VEC Vned,Vant,ant_angles;
+VEC t_ins,t_gps;
+UINT32 t0;
+SYSTEM_MODE system_mode=MODE_TRK;
+INT16 sin_amplitude=9000;//deg*100
+INT16 sin_period=200;//sec*100
+INT16 sin_repetitions=1;
+INT16 total_period=10;//sec
+INT16 point_angle=0;
+
 
 pthread_mutex_t myMutex;
+pthread_attr_t attr_sgp_latlon;
+struct sched_param param_sgp_latlon;
+pthread_t id_sgp_latlon;
+int ret_sgp_latlon;
 
 void Motor_init()
 {
     RC rc;
+    int rcc;
+
     pthread_mutex_init(&myMutex,0);
+    rc=aim_init(&DCM_fix,&DCM,&ant_angles,&Vned,&Vant);
     FIFOin=0,FIFOout=0;
     
-    rc=aim_init(&DCM_fix,&DCM,&ant_angles,&Vned,&Vant);
+    rcc = pthread_attr_init (&attr_sgp_latlon);
+    rcc = pthread_attr_setschedpolicy(&attr_sgp_latlon,SCHED_RR);
+    rcc = pthread_attr_getschedparam (&attr_sgp_latlon, &param_sgp_latlon);
+    (param_sgp_latlon.sched_priority)=10;
+    rcc = pthread_attr_setschedparam (&attr_sgp_latlon, &param_sgp_latlon);
+    ret_sgp_latlon=pthread_create(&id_sgp_latlon,&attr_sgp_latlon,&thread_SGP_latlon, NULL);
+
+    
+}
+
+
+
+void* thread_SGP_latlon(void* args)
+{
+    BYTE  azimuth_angle=90;
+    time_t startTime = clock();
+    time_t check = 0;
+    RC rc;
+    INT16 Ts=1000;//ms
+    char satname[20];
+    VEC xyz_sgp,lla1,xyz_station,lla_station;
+    lla_station.A[0]=32;//lat
+    lla_station.A[1]=35;//long
+    lla_station.A[2]=0;//alt
+
+    
+
+    while(1) //program main loop
+    {
+	
+        check = float(clock() - startTime)/CLOCKS_PER_SEC*1000;
+        //std::cout<<"S"<<check<<endl;
+        if( check >= Ts) //after 1sec
+        {
+            Get_SatLatLong(&xyz_sgp,satname);
+            rc=ecef_to_lla(&xyz_sgp,&lla1);
+            std::cout<<"SATNAME= "<<satname<<" lat: "<<lla1.A[0]/pi*180<<" lon: "<<lla1.A[1]/pi*180<<" alt: "<<lla1.A[2]<<std::endl;
+            //std::cout<<"lat: "<<xyz_sgp.A[0]/pi*180<<" lon: "<<xyz_sgp.A[1]/pi*180<<" alt: "<<xyz_sgp.A[2]<<std::endl;
+            rc=lla_to_ned(&Vned ,&xyz_sgp,&lla_station);
+            rc=update_angles(&DCM_fix,&DCM,&ant_angles,&Vned,&Vant);
+            startTime = clock();
+        }
+    }
 }
 
 void* threadRcvHandler(void* args)
@@ -235,38 +293,73 @@ void* threadRcv(void* args)
 
 void* threadSend(void* args)
 {
+    std::cout<<"S"<<endl;
     BYTE  azimuth_angle=90;
-    time_t startTime = clock();
-    time_t check = 0;
+    time_t startTime = clock(),startTime1 = clock();
+    time_t check,check_t_Period = 0;
     unsigned int kkk,n;
     RC rc;
-    float T=9;//sec
-    float Ts=5;//msec
-    float rep=1;
-    float Total_time;
+    INT16 Ts=5;//ms
+
     
 
     while(1) //program main loop
     {
-	
+	    //std::cout<<"S"<<check<<endl;
         check = float(clock() - startTime)/CLOCKS_PER_SEC*1000;
-        //std::cout<<"S"<<check<<endl;
+        check_t_Period = float(clock() - startTime1)/CLOCKS_PER_SEC*1000;
+        
         if( check >= Ts) //after 5 milliseconds have elapsed
         {
             
             startTime = clock();
-            motor_angles.A[0]=(double)azimuth_angle*sin(2*PI*(1/T)*(Ts/1000.0)*n);
-            startTime = clock();
+            //motor_angles.A[0]=(double)azimuth_angle*sin(2*PI*(1/T)*(Ts/1000.0)*n);
+            switch (system_mode)
+            {
+                case MODE_PNT:
+                        motor_angles.A[0]=(FLOAT32)sin_amplitude;
+                        rc=SendMotorData(&motor_angles);
+                        cout<<motor_angles.A[0]<<endl;
+                        break;
+                case MODE_TRK:
+                   // t_ins=vec_add_scalar(t_ins,-check,MAX_ELAPSED_TIME*MILISEC);
+                    //rc=Algo_Pred_Angle_Data((MIDJ_InsMsg *)Msg->Data,&t_ins);
+                    rc=SendMotorData(&ant_angles);
+                    cout<<ant_angles.A[0]<<endl;
+                    break;
+                case MODE_SIN:
+                    if  (check_t_Period<=sin_repetitions*sin_period*TIME_SCALE*SEC_MILI)
+                    {
+                        motor_angles.A[0]=(FLOAT32)sin_amplitude*ANGLE_SCALE*sin(2*pi/(sin_period*ANGLE_SCALE)*check_t_Period*MILISEC);
+                        rc=SendMotorData(&motor_angles);
+                        cout<<check_t_Period<<": "<<motor_angles.A[0]<<endl;
+                    }
+                    if  (check_t_Period>total_period*SEC_MILI)
+                            startTime1 = clock();
+                default:
+                    break;
+            }  
+            check = 0;
+
+
+
+
+
+
             rc=SendMotorData(&ant_angles);
             //rc=SendMotorData(&motor_angles);
-            check = 0;
-            kkk++;
-            n++;
+            
+
+
+
+
+
+          /*  n++;
             if (n*Ts>=rep*T*1000)
             {
                 n=0;
-            }		
-            usleep(3000);
+            }*/		
+            //usleep(3000);
         }
     }
 }
@@ -1185,3 +1278,11 @@ INT16 calc_servo_crc16(UINT16 crc, UINT8 const *buffer, UINT16 len)
     return ((crc & 0xFF00)>>8 | (crc & 0x00FF)<<8 );
 }
 
+RC Set_motor_params(SYSTEM_MODE s_mode,INT16 amplitude,INT16 period,INT16 rep,INT16 tot_period)
+{
+    system_mode=s_mode;
+    sin_amplitude=amplitude;
+    sin_period=period;
+    sin_repetitions=rep;
+    total_period=tot_period;
+}

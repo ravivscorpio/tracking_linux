@@ -4,9 +4,11 @@
 #include "defs.h"
 #include "defs_p.h"
 #include "rc.h"
-#include "comm.h"
-#include "UartDrv.h"
+#include "Comm.h"
 #include "rc.h"
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #define PORT_TERM UART_PORT2
 #define Term_PRE_0 0x8B//for Rx msg
@@ -38,11 +40,11 @@ typedef struct {
     UINT8 crc_16_2;
 }__attribute__ ((packed)) term_msg;
 
-
+RC TermDrv_Init (void);
 RC TermDrvRx (MSG **msg);
 RC Term_Tx(term_msg* tmsg);
 void BuildTermMsg(term_msg* tmsg, UINT8 cmd_id, INT32 data);
-
-
+void * ThreadTermRx(void* args);
+void * ThreadTermTx(void* args);
 #endif	//	_TERM_H
 

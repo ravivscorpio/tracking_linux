@@ -1,7 +1,23 @@
 #include "term.h"
+#include <iostream>
+#include <pthread.h>
+#include <unistd.h>
+#include <ctime>
+#include <string.h>
+#include "motorInfo.h"
 
+using namespace std;
+void error(const char *msg)
+{
+    perror(msg);
+    exit(1);
+}
 
-
+int sockfd, newsockfd, portno;
+socklen_t clilen;
+char buffer[256];
+struct sockaddr_in serv_addr, cli_addr;
+int nn;
 
 MSG* TermRxMsg;
 BYTE TermRxIdx;
@@ -10,17 +26,99 @@ BYTE TermRxIdx;
 RC TermDrv_Init (void)
 {
 
-   TermRxMsg = NULL;
-   TermRxIdx = 0;
+    TermRxMsg = NULL;
+    TermRxIdx = 0;
 
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+    error("ERROR opening socket");
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    portno = 50001;
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+    if (bind(sockfd, (struct sockaddr *) &serv_addr,
+            sizeof(serv_addr)) < 0) 
+            error("ERROR on binding");
+    listen(sockfd,5);
+    clilen = sizeof(cli_addr);
+    newsockfd = accept(sockfd, 
+                (struct sockaddr *) &cli_addr, 
+                &clilen);
+    if (newsockfd < 0) 
+        error("ERROR on accept");
    return(OK);
 }
 
+void * ThreadTermRx(void* args)
+{
+    MSG* TMsg;
+    term_msg *tmsg;
+    RC rc=OK;
+    while(TRUE)
+    {
+        
+        rc=TermDrvRx(&TMsg);
+        if (rc)
+            Comm_BuffFree(TMsg,TRUE);
+        if (TMsg)
+            if (TMsg->Header.OpCode == 0x11)
+            {
+                tmsg =(term_msg*)TMsg->Data;
+                //all angle units are send in deg*100
+                switch ((TERM_OPCODE)tmsg->cmd_id)
+                {
+                    case OP_SIN:
+                   
+                        Set_motor_params(MODE_SIN,tmsg->data_1*100,tmsg->data_2*100,tmsg->data_3,tmsg->data_4);
+                        break;
+                    case OP_TRK:
+                        Set_motor_params(MODE_TRK,0,0,0,0);
+                        break;
+                    case OP_PNT:
+                        Set_motor_params(MODE_PNT,(INT16)tmsg->data_1+(INT16)tmsg->data_2*256,0,0,0);
+                        break;
+                    default:
+                        Set_motor_params(MODE_TRK,0,0,0,0);	
+                        break;
+                }
 
+
+			    Comm_BuffFree (TMsg, FALSE);
+
+            }
+
+    
+
+    }
+    close(newsockfd);
+    close(sockfd);
+}
+
+void * ThreadTermTx(void* args)
+{
+    INT16 az100;
+    term_msg tm1;
+    int check=0,startTime=clock();
+    RC rc=OK;
+    while(TRUE)
+    {
+        check = float(clock() - startTime)/CLOCKS_PER_SEC*1000;
+            if (check>50)
+            {
+                startTime=clock();
+                az100=(INT16)GetPx()*100;
+                BuildTermMsg(&tm1, 0xA, az100);
+                rc=Term_Tx(&tm1);
+                
+            }
+    }
+
+}
 
 RC TermDrvRx (MSG **msg)
 {
-    RC rc;
+    RC rc=OK;
     BYTE len;
 
 
@@ -36,11 +134,8 @@ RC TermDrvRx (MSG **msg)
     while (TermRxIdx < 2)
     {
         len = 1;
-        rc=UartDrv_Rx (PORT_TERM, &(TermRxMsg->Data[TermRxIdx]), &len);
-        
-        if (rc)
-            return(rc);
-
+        //rc=UartDrv_Rx (PORT_TERM, &(TermRxMsg->Data[TermRxIdx]), &len);
+        len = read(newsockfd,&(TermRxMsg->Data[TermRxIdx]),len);
         if (TermRxIdx == 0)
         {
             if (TermRxMsg->Data[0] == Term_PRE_0)
@@ -58,18 +153,15 @@ RC TermDrvRx (MSG **msg)
     if (TermRxIdx > 1)    
 	{
 		len = Max_RxTermMsg - TermRxIdx;
-  			rc=UartDrv_Rx (PORT_TERM, &(TermRxMsg->Data[TermRxIdx]), &len);
-  			if (rc)
-     			return(rc);
-  			TermRxIdx += len;
+        len = read(newsockfd,&(TermRxMsg->Data[TermRxIdx]),len);
+        TermRxIdx += len;
 	}
 	if (TermRxIdx >=  Max_RxTermMsg)
     {
       TermRxIdx = 0;
       TermRxMsg->Header.OpCode = 0x11;
       *msg = TermRxMsg;
-      if (rc)
-         return(rc);
+
       TermRxMsg = NULL;
       return(OK);
      }
@@ -100,7 +192,8 @@ RC Term_Tx(term_msg* tmsg)
 
 {
    RC rc=OK;
-   rc=UartDrv_Tx (PORT_TERM, (BYTE*)tmsg, sizeof(*tmsg));
+   //rc=UartDrv_Tx (PORT_TERM, (BYTE*)tmsg, sizeof(*tmsg));
+   write(newsockfd,(BYTE*)tmsg,sizeof(term_msg));
    return rc;
 	
 }
@@ -129,9 +222,9 @@ void BuildTermMsg(term_msg* tmsg, UINT8 cmd_id, INT32 data)
     cmd_ptr->data_3 = (UINT8)((data & 0x00FF0000) >> 16);
     cmd_ptr->data_4 = (UINT8)((data & 0xFF000000) >> 24);
 
-    //crc_16 = calc_servo_crc16(0, (UINT8*)cmd_ptr + 2, 7);
-    //cmd_ptr->crc_16_1 = (UINT8)((crc_16 & 0xFF00) >> 8);
-    //cmd_ptr->crc_16_2 = (UINT8)(crc_16 & 0x00FF);
+    crc_16 = calc_servo_crc16(0, (UINT8*)cmd_ptr + 2, 5);
+    cmd_ptr->crc_16_1 = (UINT8)((crc_16 & 0xFF00) >> 8);
+    cmd_ptr->crc_16_2 = (UINT8)(crc_16 & 0x00FF);
 
     
 }

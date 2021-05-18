@@ -8,9 +8,9 @@
 ************************************************************************/
 
 #include "aim.h"
-#include <math.h>
-#include "rc.h"
-//#include "sgp4.h"
+#include <ctime>
+#include <iostream>
+
 
 
 RC aim_init(MAT *dcm_fix,MAT *dcm,VEC *ant_angles,VEC *Vned,VEC *Vant)
@@ -50,7 +50,7 @@ sat1.A[2]=36000000;
 	return rc;
 }
 
-RC lla_to_ecef(VEC *xyz, VEC *lla)
+RC lla_to_ecef(VEC *xyz, VEC *lla)//lla in deg and meters
 {
 	FLOAT32 N,lat,lon,alt,cln,clt,sln,slt;
 
@@ -72,7 +72,7 @@ RC lla_to_ecef(VEC *xyz, VEC *lla)
 
 	return OK;
 }
-RC ecef_to_lla(VEC* xyz, VEC* lla)
+RC ecef_to_lla(VEC* xyz, VEC* lla)//xyz in meters lla in rad
 {
 	double x,y,z,lat,lon,alt,slt,b,ep,p,th,N,sth,cth;
 	x=xyz->A[0];
@@ -381,5 +381,119 @@ RC predict_angles(MAT *dcm,VEC *ant_angles,VEC *Vned,VEC *Vant,VEC* rates)
 	*ant_angles=cart2sph(Vant->A[0],Vant->A[1],Vant->A[2]);
 	return rc;
 
+
+}
+
+void Get_SatLatLong(VEC* lla_sgp,char* satname)
+{
+	RC rc;
+
+
+	char typerun, typeinput, opsmode;
+    gravconsttype  whichconst=wgs84;
+    int whichcon;
+    
+    
+    char str[2];
+	char infilename[75];
+	double ro[3];
+	double vo[3];
+    //errno_t err;
+ 
+	double p, a, ecc, incl, node, argp, nu, m, arglat, truelon, lonper;
+	double sec, jd, jdFrac, rad, tsince,dt_epoch, startmfe, stopmfe, deltamin;
+	int  year; int mon; int day; int hr; int min;
+	char longstr1[130];
+	typedef char str3[4];
+	str3 monstr[13];
+	char outname[64];
+	char longstr2[130];
+	elsetrec satrec;
+
+	rad = 180.0 / pi;
+
+
+    satrec.classification = 'U';
+    strncpy(satrec.intldesg, "          ", 11 * sizeof(char));
+    satrec.ephtype = 0;
+    satrec.elnum = 0;
+    satrec.revnum = 0;
+    //1WEB
+    //longstr1='1 23545U 95017A   18042.62763354  .00000279  00000-0  00000-4 0  9999';
+    //longstr2=['2 23545  90.0000 ' num2str(LAN) '.0000 0000000 00.0000 ' MA_str '.0000 13.10980510217068'];
+    //strcpy(satname,"SPACEX");
+    //strcpy(longstr1,"1 23545U 95017A   18042.62763354  .00000279  00000-0  00000-4 0  9999");
+    //strcpy(longstr2,"2 23545  53.0000 130.0000 0000000 00.0000 010.0000 13.10980510217068 ");
+	strcpy(satname,"AMOS-3");       
+	strcpy(longstr1,"1 32794U 08022A   21135.89975913 -.00000026  00000-0  00000-0 0  9999");
+	strcpy(longstr2,"2 32794   0.0075 297.9215 0002234  93.1201 162.5795  1.00271050 63720");
+    double dut1 =0; //0.2048315;
+    double dat  =0; //32;%32;
+    double xp   =0;// 0.109600;/
+    double yp   =0;// 0.284144;
+    double lod  = 0.0004116;
+    int timezone = 0;
+    double ut1,tut1,jdut1,jdut1Frac,utc,tai,tt,ttt,jdtt,jdttFrac,tcg,tdb,ttdb,jdtdb,jdtdbFrac,tcb;
+    double rteme[3];
+    double vteme[3];
+    double ateme[3];
+
+    double recef[3];
+    double vecef[3];
+    double aecef[3];
+    double t0=0,t0_frac=0;
+
+    SGP4Funcs::twoline2rv(longstr1, longstr2, 'a'/*'i'*/, whichconst,startmfe, stopmfe, deltamin, satrec);
+  
+    jd = satrec.jdsatepoch;
+    jdFrac = satrec.jdsatepochF;
+
+
+    // calculate ateme
+    double ateme_unit_vector[3];
+    double magnitude_of_rteme = sqrt(pow(rteme[0],2) + pow(rteme[1],2) + pow(rteme[2],2));
+    for (int i = 0; i < 3; i++) {
+        ateme_unit_vector[i] = -1*rteme[i]/magnitude_of_rteme;
+        ateme[i] = 9.81*ateme_unit_vector[i];
+    }
+
+    /************************TIME************************************/
+	std::time_t t = std::time(0);   // get time now
+    std::tm* now = std::localtime(&t);
+
+   	year = now->tm_year + 1900;
+	mon = now->tm_mon + 1;
+    day = now->tm_mday;
+    hr = now->tm_hour;
+	min = now->tm_min;
+	sec = now->tm_sec;
+
+	/*******************************************************************/
+	SGP4Funcs::convtime(year,mon,day,hr,min,sec,timezone,dut1,dat,ut1,tut1,jdut1,jdut1Frac,utc,tai,tt,ttt,jdtt,jdttFrac,tcg,tdb,ttdb,jdtdb,jdtdbFrac,tcb);
+    SGP4Funcs::jday(year,mon,day,hr,min,sec,t0,t0_frac);
+    dt_epoch=t0+t0_frac-(jd+jdFrac);
+    tsince=dt_epoch*24*60;
+    //jd=satrec.jdsatepoch+satrec.jdsatepochF+tsince/1440.0;
+    //jdFrac=jd-floor(jd);
+    //jd=floor(jd);
+    //SGP4Funcs::invjday(jd, jdFrac, year, mon, day, hr, min, sec);
+
+    SGP4Funcs::sgp4(satrec, tsince, ro, vo);
+    for (int i = 0; i < 3; i++) {
+        rteme[i] = ro[i];
+        vteme[i] = vo[i];
+        ateme[i] = 0;
+    }
+    SGP4Funcs::teme_ecef(rteme,vteme,ateme,eTo,recef,vecef,aecef,ttt,jdut1+jdut1Frac,lod,xp,yp,0);
+    double latgc,latgd,lon,hellp;
+	/*SGP4Funcs::ecef2ll(recef,latgc,latgd,lon,hellp);
+
+	lla_sgp->A[0]=latgd;
+	lla_sgp->A[1]=lon;
+	lla_sgp->A[2]=hellp;*/
+	lla_sgp->A[0]=recef[0]*1000;
+	lla_sgp->A[1]=recef[1]*1000;
+	lla_sgp->A[2]=recef[2]*1000;
+	
 
 }

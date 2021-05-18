@@ -54,9 +54,22 @@
 #include <stdio.h>
 #include <string.h>
 #include <iostream>
+#include <vector>
+//#include "MathTimeLib.h"
 
 #define SGP4Version  "SGP4 Version 2020-07-13"
 #define pi 3.14159265358979323846
+
+
+#define Twopi 2.0 * pi
+#define Infinite  999999.9
+#define Undefined 999999.1
+#define mum 3.986004415e14        // m^3/s^2 stk uses .4415
+#define mu 398600.4415            // km^3/s^2 stk uses .4415
+#define re 6378.1363              // km  stk uses .1363
+#define velkmps 7.9053657160394282
+#define earthrot 7.29211514670698e-05  // older rad/s
+#define spdLit 2.99792458e8       // speed of light m/s
 // -------------------------- structure declarations ----------------------------
 typedef enum
 {
@@ -64,6 +77,24 @@ typedef enum
   wgs72,
   wgs84
 } gravconsttype;
+
+
+typedef enum
+{
+	e80,
+	e96,
+	e00a,
+	e00b,
+	e00cio
+} eOpt;
+
+
+// global object definitions
+	typedef enum
+	{
+		eTo, eFrom
+	} edirection;
+
 
 typedef struct elsetrec
 {
@@ -151,7 +182,7 @@ namespace SGP4Funcs
 	void twoline2rv
 		(
 		char      longstr1[130], char longstr2[130],
-		char      typerun, char typeinput, char opsmode,
+		char opsmode,
 		gravconsttype       whichconst,
 		double& startmfe, double& stopmfe, double& deltamin,
 		elsetrec& satrec
@@ -206,8 +237,11 @@ namespace SGP4Funcs
 		double& p, double& a, double& ecc, double& incl, double& omega, double& argp,
 		double& nu, double& m, double& arglat, double& truelon, double& lonper
 		);
-
-	void    jday_SGP4
+	void    hms_sec
+	(
+		int& hr, int& min, double& sec, edirection direct, double& utsec
+	);
+	void    jday
 		(
 		int year, int mon, int day, int hr, int minute, double sec,
 		double& jd, double& jdFrac
@@ -219,12 +253,70 @@ namespace SGP4Funcs
 		int& mon, int& day, int& hr, int& minute, double& sec
 		);
 
-	void    invjday_SGP4
+	void    invjday
 		(
 		double jd, double jdFrac,
 		int& year, int& mon, int& day,
 		int& hr, int& minute, double& sec
 		);
+	void ecef2ll
+	(
+		double recef[3],
+		double& latgc, double& latgd, double& lon, double& hellp
+	);
+	double  gstime
+	(
+		double jdut1
+	);
+	void teme_ecef
+	(
+		double rteme[3], double vteme[3], double ateme[3],
+		edirection direct,
+		double recef[3], double vecef[3], double aecef[3],
+		double ttt, double jdut1, double lod, double xp, double yp, int eqeterms
+	);
+	void polarm
+	(
+		double xp, double yp, double ttt, eOpt opt, std::vector< std::vector<double> > &pm
+	);
+	double  mag(double *x);
+	double  sgn(double x);
+	void    matvecmult
+	(
+		std::vector< std::vector<double> > mat,
+		//          double mat[3][3],
+		double vec[3],
+		double vecout[3]
+	);
+	void    cross
+	(
+		double vec1[3], double vec2[3], double outvec[3]
+	);
+		void    mattrans
+	(
+		std::vector< std::vector<double> > mat1,
+		std::vector< std::vector<double> > &mat2,
+		//          double mat1[3][3],
+		//          double mat2[3][3],
+		int mat1r, int mat1c
+	);
+
+
+	void    addvec
+	(
+		double a1, double vec1[3],
+		double a2, double vec2[3],
+		double vec3[3]
+	);
+
+		void    convtime
+	(
+		int year, int mon, int day, int hr, int min, double sec, int timezone,
+		double dut1, int dat,
+		double& ut1, double& tut1, double& jdut1, double& jdut1Frac, double& utc, double& tai,
+		double& tt, double& ttt, double& jdtt, double& jdttFrac, double& tcg, double& tdb,
+		double& ttdb, double& jdtdb, double& jdtdbFrac, double& tcb
+	);
 
 
 }  // namespace

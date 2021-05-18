@@ -3305,7 +3305,7 @@ namespace SGP4Funcs
 		std::vector< std::vector<double> > stdot = std::vector< std::vector<double> >(3, std::vector<double>(3));
 		std::vector< std::vector<double> > temp = std::vector< std::vector<double> >(3, std::vector<double>(3));
 		std::vector< std::vector<double> > tempmat = std::vector< std::vector<double> >(3, std::vector<double>(3));
-		std::vector< std::vector<double> > pm=std::vector< std::vector<double> >(3, std::vector<double>(3)), pmp, stp = std::vector< std::vector<double> >(3, std::vector<double>(3));
+		std::vector< std::vector<double> > pm, pmp, stp = std::vector< std::vector<double> >(3, std::vector<double>(3));
 		double omegaearth[3], rpef[3], vpef[3], apef[3], omgxr[3], omgxomgxr[3],
 			omgxv[3], tempvec1[3], tempvec[3], gmst;
 
@@ -3636,7 +3636,8 @@ namespace SGP4Funcs
 	*
 	*  coupling      :
 	*    hms_2_sec   - conversion between hr-min-sec .and. seconds
-	*    jday        - find the julian date
+	*    
+jday        - find the julian date
 	*
 	*  references    :
 	*    vallado       2013, 195, alg 16, ex 3-7
