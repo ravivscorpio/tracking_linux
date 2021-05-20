@@ -34,6 +34,23 @@ extern VEC Vned,Vant,ant_angles;
 RC MidjDrv_Init (void)
 {
 
+   /*MIDG DRV THREAD Decleration*/
+   pthread_t id_midg;
+   int ret_midg;
+   int rcc_midg;
+   pthread_attr_t attr_midg;
+   struct sched_param param_midg;
+   int max_prio = sched_get_priority_max(SCHED_RR);
+
+   rcc_midg = pthread_attr_init (&attr_midg);
+   rcc_midg = pthread_attr_setschedpolicy(&attr_midg,SCHED_RR);
+   rcc_midg = pthread_attr_getschedparam (&attr_midg, &param_midg);
+   (param_midg.sched_priority)=max_prio-5;
+   rcc_midg = pthread_attr_setschedparam (&attr_midg, &param_midg);
+
+   ret_midg=pthread_create(&id_midg,&attr_midg,&threadMIDGHandler, NULL);
+
+
    MidjRxMsg = NULL;
    MidjRxIdx = 0;
    pthread_mutex_init(&MIDGMutex,0);
@@ -83,6 +100,7 @@ RC Algo_SendInsData(MIDJ_InsMsg *InsInfo)
    //ant_angles=sat_aim(-4, 32.0,35.0, InsInfo->Roll/100.0,InsInfo->Pitch/100.0, InsInfo->Yaw/100.0, 0, 0, 0);
    rc=update_dcm(&DCM,InsInfo->Roll/100.0, InsInfo->Pitch/100.0,InsInfo->Yaw/100.0);
    rc=update_angles(&DCM_fix,&DCM,&ant_angles,&Vned,&Vant);
+   std::cout<<"MIDG: "<<(float)InsInfo->Yaw/100.0<<std::endl;
    //Vant.A[0]=ant_angles.A[0];
    //rc=Algo_SendMotorData(&ant_angles);
    return OK;

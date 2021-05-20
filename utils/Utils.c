@@ -509,4 +509,34 @@ RC Error (RC rc)
    return(OK);
 }
 
+void clock_measure()
+{
+       time_t startTime = clock();
+    std::time_t t = std::time(0);   // get time now
+    std::tm* now = std::localtime(&t);
+    int hr = now->tm_hour;
+	int min = now->tm_min;
+	int sec = now->tm_sec;
+    int secs=hr*3600+min*60+sec;
+    int d_secs=0;
+    BOOL first=TRUE;
+    while (d_secs<11)
+    {
+            std::time_t t = std::time(0);   // get time now
+            std::tm* now = std::localtime(&t);
+            hr = now->tm_hour;
+            min = now->tm_min;
+            sec = now->tm_sec;
+            d_secs=hr*3600+min*60+sec-secs;
+            if ((d_secs>=1)&&(first))
+            {
+                startTime = clock();
+                first = FALSE;
+            }
+
+    }
+    std::cout<<"number of clocks per 10sec"<< clock()-startTime<<std::endl;
+    exit(0);
+}
+
 

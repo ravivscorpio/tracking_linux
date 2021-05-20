@@ -22,7 +22,7 @@
 
 
 
-#define TICS_PER_DEGREE 22//467//136 // 49,152/360
+#define TICS_PER_DEGREE 1950//22//467//136 // 49,152/360
 
 #define MOTOR_ERROR_HISTORY_SIZE	10	// 50 ms
 
@@ -89,6 +89,9 @@
 #define TIME_SCALE 0.01
 #define SEC_MILI 1000
 #define MILISEC 0.001
+
+#define CLOCKS_PER_SEC1 CLOCKS_PER_SEC/3.8
+ 
 /***** Typedefs ********************************************************/
 typedef struct ACU_test_bit{ // UINT16
 // azimuth/elevation sweeps -> if set, bypass the pointing algorith and arinc

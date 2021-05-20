@@ -5,6 +5,7 @@
 #include <ctime>
 #include <string.h>
 #include "motorInfo.h"
+#include <pthread.h>
 
 using namespace std;
 void error(const char *msg)
@@ -25,6 +26,23 @@ BYTE TermRxIdx;
 
 RC TermDrv_Init (void)
 {
+    int rcc_term_tx,rcc_term_rx;
+    pthread_attr_t attr_term_tx,attr_term_rx;
+    struct sched_param param_term_tx,param_term_rx;
+    pthread_t id_term_tx,id_term_rx;
+    int ret_term_tx,ret_term_rx;
+
+    rcc_term_rx = pthread_attr_init (&attr_term_rx);
+    rcc_term_rx = pthread_attr_setschedpolicy(&attr_term_rx,SCHED_RR);
+    rcc_term_rx = pthread_attr_getschedparam (&attr_term_rx, &param_term_rx);
+    (param_term_rx.sched_priority)=10;
+    rcc_term_rx = pthread_attr_setschedparam (&attr_term_rx, &param_term_rx);
+
+    rcc_term_tx = pthread_attr_init (&attr_term_tx);
+    rcc_term_tx = pthread_attr_setschedpolicy(&attr_term_tx,SCHED_RR);
+    rcc_term_tx = pthread_attr_getschedparam (&attr_term_tx, &param_term_tx);
+    (param_term_tx.sched_priority)=10;
+    rcc_term_tx = pthread_attr_setschedparam (&attr_term_tx, &param_term_tx);
 
     TermRxMsg = NULL;
     TermRxIdx = 0;
@@ -42,12 +60,21 @@ RC TermDrv_Init (void)
             error("ERROR on binding");
     listen(sockfd,5);
     clilen = sizeof(cli_addr);
+
+
+
+    
+    ret_term_rx=pthread_create(&id_term_rx,&attr_term_rx,&ThreadTermRx, NULL);
+    ret_term_tx=pthread_create(&id_term_tx,&attr_term_tx,&ThreadTermTx, NULL);
     newsockfd = accept(sockfd, 
                 (struct sockaddr *) &cli_addr, 
                 &clilen);
-    if (newsockfd < 0) 
+    if (newsockfd < 0)
+    { 
         error("ERROR on accept");
-   return(OK);
+
+    }
+    return(OK);
 }
 
 void * ThreadTermRx(void* args)
@@ -89,7 +116,7 @@ void * ThreadTermRx(void* args)
             }
 
     
-
+        
     }
     close(newsockfd);
     close(sockfd);
@@ -103,8 +130,8 @@ void * ThreadTermTx(void* args)
     RC rc=OK;
     while(TRUE)
     {
-        check = float(clock() - startTime)/CLOCKS_PER_SEC*1000;
-            if (check>50)
+        check = float(clock() - startTime)/CLOCKS_PER_SEC1*1000;
+            if (check>100)
             {
                 startTime=clock();
                 az100=(INT16)GetPx()*100;

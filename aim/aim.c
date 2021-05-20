@@ -26,14 +26,15 @@ static volatile VEC Vned1,lla1,sat1,xy_sat,xyz1,lla2,Vned2;
 
 
 
-lla1.A[1]=35;
+
+
+	rc=update_lla(Vned,-4,32,35);
+	/*lla1.A[1]=35;
 lla1.A[2]=0;
 
 sat1.A[0]=0;
 sat1.A[1]=-4;
-sat1.A[2]=36000000;
-
-	rc=update_lla(Vned,-4,32,35);
+sat1.A[2]=36000000;*/
 //rc=lla_to_ecef(&xyz1,&lla1);
 //rc=lla_to_ecef(&xy_sat,&sat1);
 //rc=lla_to_ned(&Vned2 ,&xy_sat, &lla1);
@@ -421,12 +422,12 @@ void Get_SatLatLong(VEC* lla_sgp,char* satname)
     //1WEB
     //longstr1='1 23545U 95017A   18042.62763354  .00000279  00000-0  00000-4 0  9999';
     //longstr2=['2 23545  90.0000 ' num2str(LAN) '.0000 0000000 00.0000 ' MA_str '.0000 13.10980510217068'];
-    //strcpy(satname,"SPACEX");
-    //strcpy(longstr1,"1 23545U 95017A   18042.62763354  .00000279  00000-0  00000-4 0  9999");
-    //strcpy(longstr2,"2 23545  53.0000 130.0000 0000000 00.0000 010.0000 13.10980510217068 ");
-	strcpy(satname,"AMOS-3");       
-	strcpy(longstr1,"1 32794U 08022A   21135.89975913 -.00000026  00000-0  00000-0 0  9999");
-	strcpy(longstr2,"2 32794   0.0075 297.9215 0002234  93.1201 162.5795  1.00271050 63720");
+    strcpy(satname,"SPACEX");
+    strcpy(longstr1,"1 23545U 95017A   18042.62763354  .00000279  00000-0  00000-4 0  9999");
+    strcpy(longstr2,"2 23545  53.0000 130.0000 0000000 00.0000 010.0000 13.10980510217068 ");
+	//strcpy(satname,"AMOS-3");       
+	//strcpy(longstr1,"1 32794U 08022A   21135.89975913 -.00000026  00000-0  00000-0 0  9999");
+	//strcpy(longstr2,"2 32794   0.0075 297.9215 0002234  93.1201 162.5795  1.00271050 63720");
     double dut1 =0; //0.2048315;
     double dat  =0; //32;%32;
     double xp   =0;// 0.109600;/

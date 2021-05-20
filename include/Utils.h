@@ -58,6 +58,8 @@ UINT32 LittleXBig32(UINT32 val);
 RC Delay (UINT32 delay);
 RC Error (RC rc);
 
+void clock_measure();
+
 #endif  /* __Utils__H__ */
 /* Do not add any thing below this line ! */
 
