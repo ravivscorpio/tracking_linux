@@ -14,7 +14,7 @@ void error(const char *msg)
     exit(1);
 }
 
-int sockfd, newsockfd, portno;
+int sockfd=-1, newsockfd=-1, portno=0;
 socklen_t clilen;
 char buffer[256];
 struct sockaddr_in serv_addr, cli_addr;
@@ -79,12 +79,13 @@ RC TermDrv_Init (void)
 
 void * ThreadTermRx(void* args)
 {
-    MSG* TMsg;
-    term_msg *tmsg;
+    MSG* TMsg=NULL;
+    term_msg *tmsg=NULL;
     RC rc=OK;
     while(TRUE)
     {
-        
+        if (newsockfd<=0)
+            continue;
         rc=TermDrvRx(&TMsg);
         if (rc)
             Comm_BuffFree(TMsg,TRUE);
@@ -130,6 +131,8 @@ void * ThreadTermTx(void* args)
     RC rc=OK;
     while(TRUE)
     {
+        if (newsockfd<=0)
+            continue;
         check = float(clock() - startTime)/CLOCKS_PER_SEC1*1000;
             if (check>100)
             {
@@ -162,6 +165,8 @@ RC TermDrvRx (MSG **msg)
     {
         len = 1;
         //rc=UartDrv_Rx (PORT_TERM, &(TermRxMsg->Data[TermRxIdx]), &len);
+
+        
         len = read(newsockfd,&(TermRxMsg->Data[TermRxIdx]),len);
         if (TermRxIdx == 0)
         {
