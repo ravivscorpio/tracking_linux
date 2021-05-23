@@ -1,0 +1,2 @@
+chmod o+rw /dev/ttyUSB0
+chmod o+rw /dev/ttyUSB1

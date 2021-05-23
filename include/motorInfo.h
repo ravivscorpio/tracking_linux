@@ -415,5 +415,6 @@ double GetPx(void);
 RC SendMotorData(VEC *ant_angles);
 RC Set_motor_params(SYSTEM_MODE system_mode,INT16 amplitude,INT16 period,INT16 rep,INT16 total_period);
 void* thread_SGP_latlon(void* args);
+RC  Pred_Angle_Data(VEC *InsInfo,VEC* delta_t);
 #endif
 

@@ -44,7 +44,7 @@ VEC vec_add_scalar(VEC vec, FLOAT32 x,FLOAT32 modulu)
 	 if (x<0)
 		for(i=0;i<3;i++)
 		{
-			vec.A[i]=x-vec.A[i];
+			vec.A[i]=-x-vec.A[i];
 			if (vec.A[i]<0)
 				vec.A[i]+=modulu;
 				

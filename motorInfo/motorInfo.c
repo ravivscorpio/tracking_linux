@@ -18,7 +18,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <ctime>
-
+#include <sys/time.h>
 using namespace std;
 
 
@@ -184,10 +184,11 @@ MSG msg_data;
 MSG* msg=NULL;
 
 MAT DCM,DCM_fix;
-VEC Vned,Vant,ant_angles;
+VEC Euler,Vned,Vant,ant_angles;
+extern VEC t_midg;
 VEC t_ins,t_gps;
 UINT32 t0;
-SYSTEM_MODE system_mode=MODE_SIN;
+SYSTEM_MODE system_mode=MODE_TRK;
 INT16 sin_amplitude=9000;//deg*100
 INT16 sin_period=300;//sec*100
 INT16 sin_repetitions=1;
@@ -218,7 +219,7 @@ void Motor_init()
     rcc_sgp_latlon = pthread_attr_init (&attr_sgp_latlon);
     rcc_sgp_latlon = pthread_attr_setschedpolicy(&attr_sgp_latlon,SCHED_RR);
     rcc_sgp_latlon = pthread_attr_getschedparam (&attr_sgp_latlon, &param_sgp_latlon);
-    (param_sgp_latlon.sched_priority)=10;
+    (param_sgp_latlon.sched_priority)=5;
     rcc_sgp_latlon = pthread_attr_setschedparam (&attr_sgp_latlon, &param_sgp_latlon);
 
     /*Motor TX Thread*/
@@ -231,7 +232,7 @@ void Motor_init()
     rcc_motor_rx = pthread_attr_init (&attr_motor_rx);
     rcc_motor_rx = pthread_attr_setschedpolicy(&attr_motor_rx,SCHED_RR);
     rcc_motor_rx = pthread_attr_getschedparam (&attr_motor_rx, &param_motor_rx);
-    (param_motor_rx.sched_priority)=max_prio-5;
+    (param_motor_rx.sched_priority)=max_prio-6;
     rcc_motor_rx = pthread_attr_setschedparam (&attr_motor_rx, &param_motor_rx);
 
     ret_motor_rx=pthread_create(&id_motor_rx,&attr_motor_rx,&threadRcv, NULL);
@@ -289,7 +290,7 @@ void* threadRcv(void* args)
         if (msg)
             if (msg->Header.OpCode == 0x11){
                 RxMsghandler(msg->Data);
-                std::cout<<clock()<<": Motor Info: "<<px_deg<<endl;
+                //std::cout<<clock()<<": Motor Info: "<<px_deg<<endl;
                 rc=Comm_BuffFree(msg,TRUE);
             
         }
@@ -309,8 +310,9 @@ void* threadSend(void* args)
     unsigned int kkk,n;
     RC rc;
     INT16 Ts=5;//ms
+    long  dt,dT;
 
-    
+    struct timeval sss1,sss2,sssT;
 
     while(1) //program main loop
     {
@@ -318,9 +320,12 @@ void* threadSend(void* args)
         check = float(clock() - startTime)/CLOCKS_PER_SEC1*1000;
         check_t_Period = float(clock() - startTime1)/CLOCKS_PER_SEC1*1000;
         //clock_measure();
-        if( check >= Ts) //after 5 milliseconds have elapsed
+        gettimeofday(&sss2,NULL);
+        dt=float(sss2.tv_sec-sss1.tv_sec)*1000000+sss2.tv_usec-sss1.tv_usec;
+        dT=float(sss2.tv_sec-sssT.tv_sec)*1000000+sss2.tv_usec-sss1.tv_usec;
+        if (dt>5000)//if( check >= Ts) //after 5 milliseconds have elapsed
         {
-            
+            gettimeofday(&sss1,NULL); 
             startTime = clock();
             //motor_angles.A[0]=(double)azimuth_angle*sin(2*PI*(1/T)*(Ts/1000.0)*n);
             switch (system_mode)
@@ -331,10 +336,22 @@ void* threadSend(void* args)
                         
                         break;
                 case MODE_TRK:
-                   // t_ins=vec_add_scalar(t_ins,-check,MAX_ELAPSED_TIME*MILISEC);
-                    //rc=Algo_Pred_Angle_Data((MIDJ_InsMsg *)Msg->Data,&t_ins);
+                   /* t_ins.A[0]=float(t_midg.A[0])/CLOCKS_PER_SEC1;//ms
+                    t_ins.A[1]=float(t_midg.A[1])/CLOCKS_PER_SEC1;
+                    t_ins.A[2]=float(t_midg.A[2])/CLOCKS_PER_SEC1;*/
+                    t_ins.A[0]=float(t_midg.A[0]);
+                    t_ins.A[1]=float(t_midg.A[1]);
+                    t_ins.A[2]=float(t_midg.A[2]);
+
+                    //t_ins=vec_add_scalar(t_ins,-float(clock())/CLOCKS_PER_SEC1,MAX_ELAPSED_TIME*MILISEC);
+                    t_ins=vec_add_scalar(t_ins,-(sss1.tv_sec+float(sss1.tv_usec)/1000000.0),MAX_ELAPSED_TIME*MILISEC);
+                    rc=Pred_Angle_Data(&Euler,&t_ins);
                     rc=SendMotorData(&ant_angles);
-                    //cout<<ant_angles.A[0]<<endl;
+                    cout<<float(clock())/CLOCKS_PER_SEC1*1000<<" "<<ant_angles.A[0]<<endl;
+                    
+                    
+                    
+                    cout<<"-------------------------------------"<<dt<<endl;
                     break;
                 case MODE_SIN:
                     if  (check_t_Period<=sin_repetitions*sin_period*TIME_SCALE*SEC_MILI)
@@ -343,7 +360,7 @@ void* threadSend(void* args)
                         rc=SendMotorData(&motor_angles);
                         
                         	std::time_t t = std::time(0);   // get time now
-    std::tm* now = std::localtime(&t);
+                            std::tm* now = std::localtime(&t);
 
 
     int hr = now->tm_hour;
@@ -351,8 +368,10 @@ void* threadSend(void* args)
 	int sec = now->tm_sec;
                         cout<<hr*3600+min*60+sec<<": "<<check_t_Period<<"sending: "<<motor_angles.A[0]<<endl;
                     }
-                    if  (check_t_Period>total_period*SEC_MILI)
+                   if  (check_t_Period>total_period*SEC_MILI)
                             startTime1 = clock();
+                    if (dT>total_period*SEC_MILI*SEC_MILI)
+                         gettimeofday(&sssT,NULL); 
                     break;
                 default:
                     break;
@@ -1302,3 +1321,20 @@ RC Set_motor_params(SYSTEM_MODE s_mode,INT16 amplitude,INT16 period,INT16 rep,IN
     sin_repetitions=rep;
     total_period=tot_period;
 }
+
+RC  Pred_Angle_Data(VEC *InsInfo,VEC* delta_t)
+
+{
+   
+   RC rc;
+   VEC rates;
+   rates.A[0]=float(InsInfo->A[0])/100.0*DEG2RAD*delta_t->A[0];
+   rates.A[1]=float(InsInfo->A[1])/100.0*DEG2RAD*delta_t->A[1];
+   rates.A[2]=float(InsInfo->A[2])/100.0*DEG2RAD*delta_t->A[2];
+   rc=predict_angles(&DCM,&ant_angles,&Vned,&Vant,&rates);
+ 
+   //Vant.A[0]=ant_angles.A[0];
+   //rc=Algo_SendMotorData(&ant_angles);
+   return rc;
+}
+

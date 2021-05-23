@@ -84,7 +84,8 @@ void * ThreadTermRx(void* args)
     RC rc=OK;
     while(TRUE)
     {
-        if (newsockfd<=0)
+
+        if (newsockfd<0)
             continue;
         rc=TermDrvRx(&TMsg);
         if (rc)
@@ -117,10 +118,10 @@ void * ThreadTermRx(void* args)
             }
 
     
-        
+         
     }
-    close(newsockfd);
-    close(sockfd);
+    
+    
 }
 
 void * ThreadTermTx(void* args)
@@ -131,6 +132,7 @@ void * ThreadTermTx(void* args)
     RC rc=OK;
     while(TRUE)
     {
+
         if (newsockfd<=0)
             continue;
         check = float(clock() - startTime)/CLOCKS_PER_SEC1*1000;
@@ -142,6 +144,7 @@ void * ThreadTermTx(void* args)
                 rc=Term_Tx(&tm1);
                 
             }
+        
     }
 
 }
