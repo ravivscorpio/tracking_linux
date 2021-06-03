@@ -22,7 +22,8 @@
 MSG *MidjRxMsg=NULL;
 BYTE MidjRxIdx=0;
 pthread_mutex_t MIDGMutex;
-mySerial serialMIDG("/dev/ttyUSB1",115200);
+//mySerial serialMIDG("/dev/ttyUSB1",115200);
+mySerial serialMIDG("/dev/ttyS0",115200);
 //VEC t_midg;
 timeval t_midg;
 bool midg_msg=false;
@@ -54,11 +55,11 @@ RC MidjDrv_Init (void)
    rcc_midg = pthread_attr_setschedparam (&attr_midg, &param_midg);
 
    ret_midg=pthread_create(&id_midg,&attr_midg,&threadMIDGHandler, NULL);
-
+ 
 
    MidjRxMsg = NULL;
    MidjRxIdx = 0;
-   pthread_mutex_init(&MIDGMutex,0);
+   //pthread_mutex_init(&MIDGMutex,0);
    return(OK);
 }
 
@@ -73,7 +74,7 @@ void* threadMIDGHandler(void* args)
     while(1)
     {
 
-         
+         std::cout<<"fsdfds";
          MidjDrv_Rx(&Msg);
            // msg=Comm_BuffAlloc(&rc,TRUE);
          if (Msg)
@@ -84,13 +85,6 @@ void* threadMIDGHandler(void* args)
             //case MIDJ_ID_GPS: t_gps.A[0]=timer2;t_gps.A[1]=timer2;t_gps.A[2]=timer2;rc = Algo_SendGpsData((MIDJ_GpsMsg *)Msg->Data);Comm_BuffFree (Msg, FALSE); break;
             default: Msg->Header.OpCode=0;rc = rcMidjDrvWrongInput;Comm_BuffFree(Msg,TRUE);Msg=NULL; break;
          }
-
-
-
-            //msg=NULL;
-            //MotorDrvRx (&msg);
-           // RxMsghandler(msg->Data);
-            //std::cout<<px_deg<<endl;
     }
 }
 

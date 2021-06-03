@@ -80,17 +80,7 @@
 
 
 
-#define TIME		10000 //10sec
-#define PROCESS_CYCLE 5
-#define MAX_ELAPSED_TIME 1000
-#define MAX_TOTAL_PERIOD 600000
-#define MAX_timer 2000
-#define ANGLE_SCALE 0.01
-#define TIME_SCALE 0.01
-#define SEC_MILI 1000
-#define MILISEC 0.001
 
-#define CLOCKS_PER_SEC1 CLOCKS_PER_SEC/3.8
  
 /***** Typedefs ********************************************************/
 typedef struct ACU_test_bit{ // UINT16
@@ -396,17 +386,9 @@ typedef enum servo_cmd_error{
 } servo_cmd_error_t;
 
 
-typedef enum{
-	MODE_PNT,
-	MODE_TRK,
-	MODE_SIN,
-	MODE_RSSI
-	
-}SYSTEM_MODE;
+
 
 void Motor_init();
-void* threadRcv(void* args);
-void* threadSend(void* args);
 RC MotorDrvRx (MSG **msg);
 void RxMsghandler(void *cmd_p);
 UINT8* BuildServoCmd(UINT8* ptr, UINT16 cmd_id, UINT8 idx, UINT8 type, UINT8 data_type);
@@ -417,8 +399,7 @@ INT16 calc_servo_crc16(UINT16 crc, UINT8 const *buffer, UINT16 len);
 void SetPx(INT32 new_px);
 double GetPx(void);
 RC SendMotorData(VEC *ant_angles);
-RC Set_motor_params(SYSTEM_MODE system_mode,INT16 amplitude,INT16 period,INT16 rep,INT16 total_period);
-void* thread_SGP_latlon(void* args);
-RC  Pred_Angle_Data(VEC *InsInfo,VEC* delta_t);
+
+
 #endif
 

@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <ctime>
 #include <string.h>
-#include "motorInfo.h"
+#include "tracking.h"
 #include <pthread.h>
 #include <signal.h>
 

@@ -22,6 +22,7 @@ _DEPS =  defs_p.h\
 		 aim.h\
 		 SGP4.h\
 		 term.h\
+		 tracking.h
 		 
 
 _DEPS_P =./Comm/Comm_p.h\
@@ -41,7 +42,8 @@ SOURCES =	./motorInfo/motorInfo.c\
 			./MIDG/MidjDrv.c\
 			./aim/aim.c\
 			./SGP4/SGP4.c\
-			./term/term.c
+			./term/term.c\
+			./tracking/tracking.c
 
 _OBJ=$(SOURCES:%.c=%.o)
 OBJ = $(addprefix $(ODIR)/,$(notdir $(SOURCES:%.c=%.o)))
