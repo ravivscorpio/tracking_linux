@@ -22,7 +22,7 @@
 MSG *MidjRxMsg=NULL;
 BYTE MidjRxIdx=0;
 pthread_mutex_t MIDGMutex;
-mySerial serialMIDG("/dev/ttyUSB1",115200);
+mySerial serialMIDG("/dev/ttyS0",115200);
 //VEC t_midg;
 timeval t_midg;
 bool midg_msg=false;

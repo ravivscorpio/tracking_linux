@@ -85,7 +85,7 @@ bool mySerial::Send( unsigned char  * data,int len)
 {
    if(!IsOpen()) return false;
    int rlen= write(handle,data,len); 
-   tcdrain(handle);
+   //tcdrain(handle);
    
    return(rlen == len);
 }
