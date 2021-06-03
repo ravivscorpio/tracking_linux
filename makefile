@@ -48,12 +48,12 @@ OBJ = $(addprefix $(ODIR)/,$(notdir $(SOURCES:%.c=%.o)))
 
 motor:  $(_OBJ)
 	@echo Linking..........................................
-	$(CC) -g  -o  $@	$(addprefix $(ODIR)/,$(^F)) $(CFLAGS) $(LIBS) -lpthread -lrt
+	$(CC) -DRAYON -g  -o  $@	$(addprefix $(ODIR)/,$(^F)) $(CFLAGS) $(LIBS) -lpthread -lrt
 
 
 $(_OBJ) : %.o : %.c
 	@echo Compiling.......................................
-	$(CC) -g $(CFLAGS)  -c -o $(ODIR)/$(@F)	$< -lpthread -lrt
+	$(CC) -DRAYON -g $(CFLAGS)  -c -o $(ODIR)/$(@F)	$< -lpthread -lrt
 
 
 

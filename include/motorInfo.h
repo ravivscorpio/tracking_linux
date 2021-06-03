@@ -132,22 +132,26 @@ typedef struct
 typedef enum cmd_id {
    SERVO_ACCL_CMD =                200,
    SERVO_DECCL_CMD =               201,
-   //SERVO_PA_CMD =                  205,
+   #ifdef RAYON
+   SERVO_PA_CMD =                  205,
+   SERVO_MO_CMD =                  284,
+   SERVO_PX_CMD =                  3200,
+   #else
    SERVO_PA_CMD =                  5,
+   SERVO_MO_CMD =                  1,
+   SERVO_PX_CMD =                  26,
+   #endif
+
    SERVO_STOP_DECCL_CMD =          207,
    SERVO_SPP_CMD =                 208,
    SERVO_3PNT_MOVE_CMD =           210,
    SERVO_BG_CMD =                  238,
-   //SERVO_MO_CMD =                  284,
-   SERVO_MO_CMD =                  1,
    SERVO_UM_CMD =                  289,
    SERVO_MF_CMD =                  2216,
    SERVO_INFO_CMD =                2219,
    SERVO_STATUS_CMD =              2223,
    SERVO_TI_CMD =                  2225,
    SERVO_VER_CMD =                 2230,
-   //SERVO_PX_CMD =                  3200,
-   SERVO_PX_CMD =                  26,
    SERVO_AA_CMD =                  3208,
    SERVO_PM_CMD =                  4203,
    SERVO_HRL_CMD =                 4206, // High Refference Limit

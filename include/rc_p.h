@@ -48,7 +48,7 @@
 #define rcExtUartDrvBase   0x0F00
 #define rcMidjDrvBase      0x1000
 #define rcHemDrvBase       0x1100
-#define rcMagDrvBase       0x1200
+#define rcTermclosed       0x1200
 
 /***** Functions Declarations ******************************************/
 

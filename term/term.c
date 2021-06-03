@@ -6,6 +6,7 @@
 #include <string.h>
 #include "motorInfo.h"
 #include <pthread.h>
+#include <signal.h>
 
 using namespace std;
 void error(const char *msg)
@@ -22,7 +23,7 @@ int nn;
 
 MSG* TermRxMsg;
 BYTE TermRxIdx;
-//BYTE val;
+RC Termclosed=OK;
 
 RC TermDrv_Init (void)
 {
@@ -47,6 +48,7 @@ RC TermDrv_Init (void)
     TermRxMsg = NULL;
     TermRxIdx = 0;
 
+    signal(SIGPIPE, SIG_IGN); 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
     error("ERROR opening socket");
@@ -88,6 +90,16 @@ void * ThreadTermRx(void* args)
         if (newsockfd<0)
             continue;
         rc=TermDrvRx(&TMsg);
+        if (rc==rcTermclosed)
+        {
+            rc=OK;
+            
+            newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr,&clilen);
+            if (newsockfd < 0)
+            { 
+                error("ERROR on accept");
+            }
+        }
         if (rc)
             Comm_BuffFree(TMsg,TRUE);
         if (TMsg)
@@ -130,11 +142,13 @@ void * ThreadTermTx(void* args)
     term_msg tm1;
     int check=0,startTime=clock();
     RC rc=OK;
+
     while(TRUE)
     {
 
         if (newsockfd<=0)
             continue;
+        
         check = float(clock() - startTime)/CLOCKS_PER_SEC1*1000;
             if (check>100)
             {
@@ -142,6 +156,17 @@ void * ThreadTermTx(void* args)
                 az100=(INT16)GetPx()*100;
                 BuildTermMsg(&tm1, 0xA, az100);
                 rc=Term_Tx(&tm1);
+                if (rc==rcTermclosed)
+                {
+                    rc=OK;
+                    
+                    newsockfd = accept(sockfd,(struct sockaddr *) &cli_addr,&clilen);
+                    if (newsockfd < 0)
+                    { 
+                        error("ERROR on accept");
+                    }
+                }
+
                 
             }
         
@@ -171,6 +196,8 @@ RC TermDrvRx (MSG **msg)
 
         
         len = read(newsockfd,&(TermRxMsg->Data[TermRxIdx]),len);
+        if (len==0)
+            return rcTermclosed;
         if (TermRxIdx == 0)
         {
             if (TermRxMsg->Data[0] == Term_PRE_0)
@@ -189,6 +216,9 @@ RC TermDrvRx (MSG **msg)
 	{
 		len = Max_RxTermMsg - TermRxIdx;
         len = read(newsockfd,&(TermRxMsg->Data[TermRxIdx]),len);
+        if (len==0)
+            return rcTermclosed;
+        
         TermRxIdx += len;
 	}
 	if (TermRxIdx >=  Max_RxTermMsg)
@@ -227,8 +257,14 @@ RC Term_Tx(term_msg* tmsg)
 
 {
    RC rc=OK;
-   //rc=UartDrv_Tx (PORT_TERM, (BYTE*)tmsg, sizeof(*tmsg));
-   write(newsockfd,(BYTE*)tmsg,sizeof(term_msg));
+   BYTE status=0;
+   int error = 0;
+   socklen_t len = sizeof (error);
+   if (write(newsockfd,(BYTE*)tmsg,sizeof(term_msg))<=0)
+    return rcTermclosed;
+
+
+        
    return rc;
 	
 }

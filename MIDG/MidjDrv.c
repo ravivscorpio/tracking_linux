@@ -23,10 +23,12 @@ MSG *MidjRxMsg=NULL;
 BYTE MidjRxIdx=0;
 pthread_mutex_t MIDGMutex;
 mySerial serialMIDG("/dev/ttyUSB1",115200);
-VEC t_midg;
-
+//VEC t_midg;
+timeval t_midg;
+bool midg_msg=false;
 extern MAT DCM,DCM_fix;
 extern VEC Euler,Vned,Vant,ant_angles;
+extern struct timeval zulu_time;
 /************************************************************************
 * Name       : RC MidjDrv_Init (void)
 * Description:
@@ -48,7 +50,7 @@ RC MidjDrv_Init (void)
    rcc_midg = pthread_attr_init (&attr_midg);
    rcc_midg = pthread_attr_setschedpolicy(&attr_midg,SCHED_RR);
    rcc_midg = pthread_attr_getschedparam (&attr_midg, &param_midg);
-   (param_midg.sched_priority)=max_prio-3;
+   (param_midg.sched_priority)=max_prio;
    rcc_midg = pthread_attr_setschedparam (&attr_midg, &param_midg);
 
    ret_midg=pthread_create(&id_midg,&attr_midg,&threadMIDGHandler, NULL);
@@ -100,19 +102,22 @@ RC Algo_SendInsData(MIDJ_InsMsg *InsInfo)
    
    RC rc=OK;
    struct timeval midg_meas;
-   //std::cout<<(float)InsInfo->Pitch/100.0<<std::endl;
-   //ant_angles=sat_aim(-4, 32.0,35.0, InsInfo->Roll/100.0,InsInfo->Pitch/100.0, InsInfo->Yaw/100.0, 0, 0, 0);
+   static int i=0;
+   static int j;
+
+
+
+       
    rc=update_dcm(&DCM,InsInfo->Roll/100.0, InsInfo->Pitch/100.0,InsInfo->Yaw/100.0);
    rc=update_angles(&DCM_fix,&DCM,&ant_angles,&Vned,&Vant);
    Euler.A[0]=InsInfo->xRate;
    Euler.A[1]=InsInfo->yRate;
    Euler.A[2]=InsInfo->zRate;
-   //t_midg.A[0]=t_midg.A[1]=t_midg.A[2]=clock();
-   gettimeofday(&midg_meas,NULL); 
-   t_midg.A[0]=t_midg.A[1]=t_midg.A[2]=float(midg_meas.tv_sec)+float(midg_meas.tv_usec)/1000000.0;
-   std::cout<<"MIDG: "<<t_midg.A[0]<<" "<<(float)InsInfo->Yaw/100.0<<" "<<float(InsInfo->zRate)/100<<std::endl;
-   //Vant.A[0]=ant_angles.A[0];
-   //rc=Algo_SendMotorData(&ant_angles);
+
+   gettimeofday(&t_midg,NULL);
+   midg_msg=true;
+
+   std::cout<<"MIDG: "<<(t_midg.tv_sec-zulu_time.tv_sec)*1000000+(t_midg.tv_usec-zulu_time.tv_usec)<<" "<<(double)InsInfo->Yaw/100.0<<" "<<double(InsInfo->zRate)/100<<" "<<ant_angles.A[0]<<std::endl;
    return OK;
 }
 
