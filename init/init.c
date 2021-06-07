@@ -1,20 +1,16 @@
-#include "motorInfo.h"
+/*#include "motorInfo.h"
+#include "tracking.h"
 #include "MidjDrv.h"
-#include "aim.h"
 #include "term.h"
-#include <ctime>
-#include <iostream>
+#include <iostream>*/
 #include <unistd.h>
 #include <cstdlib>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "serial.h"
-#include <math.h>
-#include <pthread.h>
-#include <sched.h>
-#include <errno.h>
-#include <Utils.h>
+
+#include <ctime>
+#include <iostream>
+
 
 
 
@@ -23,18 +19,18 @@
 int main(int argc, char *argv[])
 {
 
-    VEC motor_angles;
-    RC rc;
-    BYTE  azimuth_angle;
-  
+
+    std::cout<<"AA";
+    /*Tracking_init();
     Motor_init();
     Comm_Init();
     MidjDrv_Init();
-    TermDrv_Init();
-   
+    TermDrv_Init();*/
+    
     while (true)
     {
 
+ std::cout<<"AA";
         sleep(1);
     }
 

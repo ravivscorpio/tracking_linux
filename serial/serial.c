@@ -84,8 +84,16 @@ bool mySerial::IsOpen(void)
 bool mySerial::Send( unsigned char  * data,int len)
 {
    if(!IsOpen()) return false;
+<<<<<<< HEAD
    int rlen= write(handle,data,len); 
    //tcdrain(handle);
+=======
+   int rlen= write(handle,data,len);
+
+
+   //tcdrain(handle);
+  // tcflush(handle, TCOFLUSH);
+>>>>>>> tracking
    
    return(rlen == len);
 }
